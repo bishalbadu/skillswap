@@ -1,79 +1,3 @@
-// "use client";
-// import { useState } from "react";
-
-// export default function RegisterPage() {
-//   const [form, setForm] = useState({ firstName: "", lastName: "", email: "", password: "", confirmPassword: "", agree: false });
-//   const [error, setError] = useState("");
-//   const [success, setSuccess] = useState("");
-
-//   const handleSubmit = async (e: any) => {
-//     e.preventDefault();
-//     setError("");
-//     setSuccess("");
-
-//     if (!form.agree) return setError("You must agree to the terms.");
-//     if (form.password !== form.confirmPassword) return setError("Passwords do not match.");
-//     if (form.password.length < 6) return setError("Password must be at least 6 characters.");
-
-//     const res = await fetch("/api/auth/register", {
-//       method: "POST",
-//       headers: { "Content-Type": "application/json" },
-//       body: JSON.stringify(form),
-//     });
-
-//     const data = await res.json();
-//     if (res.ok) setSuccess(data.message);
-//     else setError(data.error);
-//   };
-
-//   return (
-//     <div className="flex h-screen">
-//       {/* Left Info Section */}
-//       <div className="hidden md:flex w-1/2 bg-[#556B2F] text-white flex-col justify-center items-center p-12">
-//         <h2 className="text-3xl font-bold mb-4">INFORMATION</h2>
-//         <p className="text-sm max-w-md text-center mb-8">
-//           Join SkillSwap to connect, learn, and teach collaboratively. Build your skills while helping others grow.
-//         </p>
-//         <a href="/login" className="bg-white text-[#556B2F] font-semibold px-6 py-2 rounded-md hover:bg-[#f2f2f2] transition">
-//           Have An Account
-//         </a>
-//       </div>
-
-//       {/* Right Form Section */}
-//       <div className="w-full md:w-1/2 bg-white flex flex-col justify-center px-8 md:px-20">
-//         <h2 className="text-3xl font-bold text-[#556B2F] mb-6">REGISTER FORM</h2>
-
-//         <form onSubmit={handleSubmit} className="space-y-4">
-//           <div className="flex gap-4">
-//             <input type="text" placeholder="First Name" value={form.firstName} onChange={e => setForm({ ...form, firstName: e.target.value })} className="w-1/2 border p-3 rounded" />
-//             <input type="text" placeholder="Last Name" value={form.lastName} onChange={e => setForm({ ...form, lastName: e.target.value })} className="w-1/2 border p-3 rounded" />
-//           </div>
-
-//           <input type="email" placeholder="Your Email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} className="w-full border p-3 rounded" />
-
-//           <div className="flex gap-4">
-//             <input type="password" placeholder="Password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} className="w-1/2 border p-3 rounded" />
-//             <input type="password" placeholder="Confirm Password" value={form.confirmPassword} onChange={e => setForm({ ...form, confirmPassword: e.target.value })} className="w-1/2 border p-3 rounded" />
-//           </div>
-
-//           <div className="flex items-center gap-2">
-//             <input type="checkbox" checked={form.agree} onChange={e => setForm({ ...form, agree: e.target.checked })} />
-//             <label>I agree to the <a href="#" className="text-[#B8860B] underline">Terms and Conditions</a></label>
-//           </div>
-
-//           {error && <p className="text-red-600 text-sm">{error}</p>}
-//           {success && <p className="text-green-600 text-sm">{success}</p>}
-
-//           <button type="submit" className="w-full bg-[#556B2F] text-white py-3 rounded font-semibold hover:bg-[#445724] transition">
-//             Register
-//           </button>
-//         </form>
-//       </div>
-//     </div>
-//   );
-// }
-
-
 "use client";
 import { useState } from "react";
 import { motion } from "framer-motion";
@@ -84,9 +8,7 @@ import {
   FaEye,
   FaEyeSlash,
   FaGoogle,
-  FaFacebook,
-  FaGithub,
-  FaLinkedin,
+ 
 } from "react-icons/fa";
 
 export default function RegisterPage() {
@@ -284,9 +206,6 @@ export default function RegisterPage() {
             </p>
             <div className="flex justify-center gap-6 text-2xl text-[#4a5e27]">
               <FaGoogle className="hover:scale-110 transition" />
-              <FaFacebook className="hover:scale-110 transition" />
-              <FaGithub className="hover:scale-110 transition" />
-              <FaLinkedin className="hover:scale-110 transition" />
             </div>
           </form>
         </motion.div>
