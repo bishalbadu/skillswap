@@ -1,195 +1,19 @@
-// "use client";
-
-// import { useEffect, useState } from "react";
-
-// export default function FindSkillsPage() {
-//   const [loading, setLoading] = useState(true);
-//   const [skills, setSkills] = useState<any[]>([]);
-//   const [me, setMe] = useState<any>(null);
-
-//   const [search, setSearch] = useState("");
-//   const [level, setLevel] = useState("");
-//   const [format, setFormat] = useState("");
-
-//   useEffect(() => {
-//     loadSkills();
-//   }, []);
-
-//   async function loadSkills() {
-//     try {
-//       const res = await fetch("/api/find-skills", { credentials: "include" });
-//       const json = await res.json();
-//       setSkills(json.skills || []);
-//       setMe(json.me || null);
-//     } catch (err) {
-//       console.log("Error:", err);
-//     }
-//     setLoading(false);
-//   }
-
-//   const filtered = skills.filter((s) => {
-//     return (
-//       s.name.toLowerCase().includes(search.toLowerCase()) &&
-//       (level ? s.level === level : true) &&
-//       (format ? s.platform === format : true)
-//     );
-//   });
-
-//   return (
-//     <div className="flex bg-[#f7f7f7] min-h-screen font-['Inter']">
-
-//       {/* LEFT SIDEBAR FILTER */}
-//       <div className="w-80 bg-white border-r border-[#e3e8dc] p-7 space-y-6">
-
-//         <h2 className="text-lg font-semibold text-[#2b3d1f]">Search filters</h2>
-
-//         <input
-//           placeholder="Try 'Python', 'UX design'..."
-//           className="w-full border rounded px-3 py-2"
-//           value={search}
-//           onChange={(e) => setSearch(e.target.value)}
-//         />
-
-//         {/* LEVEL */}
-//         <div>
-//           <p className="text-sm font-medium mb-1">Level</p>
-//           <select
-//             className="border w-full rounded px-3 py-2"
-//             value={level}
-//             onChange={(e) => setLevel(e.target.value)}
-//           >
-//             <option value="">Any</option>
-//             <option>Beginner</option>
-//             <option>Intermediate</option>
-//             <option>Advanced</option>
-//           </select>
-//         </div>
-
-//         {/* FORMAT */}
-//         <div>
-//           <p className="text-sm font-medium mb-1">Format</p>
-//           <select
-//             className="border w-full rounded px-3 py-2"
-//             value={format}
-//             onChange={(e) => setFormat(e.target.value)}
-//           >
-//             <option>Google Meet</option>
-//             <option>Zoom</option>
-//           </select>
-//         </div>
-
-//         <button
-//           className="w-full bg-[#4a5e27] text-white rounded py-2 mt-4"
-//           onClick={() => {
-//             setSearch("");
-//             setLevel("");
-//             setFormat("");
-//             loadSkills();
-//           }}
-//         >
-//           Reset Filters
-//         </button>
-//       </div>
-
-//       {/* MAIN CONTENT */}
-//       <div className="flex-1 p-10">
-
-//         <h1 className="text-2xl font-bold text-[#2b3d1f] mb-6">
-//           Find skills to learn
-//         </h1>
-
-//         {/* SWAP PREFERENCES PANEL */}
-//         {me && (
-//           <div className="bg-white rounded-xl border p-5 mb-6">
-
-//             <h3 className="font-semibold mb-2">Your swap preferences</h3>
-
-//             <p className="text-sm text-gray-700">
-//               <b>Skills you want to learn:</b>{" "}
-//               {me.SkillsWanted?.map((s: any) => s.name).join(", ") || "None"}
-//             </p>
-
-//             <p className="text-sm text-gray-700 mt-1">
-//               <b>Skills you can teach:</b>{" "}
-//               {me.SkillsOffered?.map((s: any) => s.name).join(", ") || "None"}
-//             </p>
-//           </div>
-//         )}
-
-//         {/* LOADING */}
-//         {loading && <div className="text-lg">Loading...</div>}
-
-//         {/* RESULTS */}
-//         {!loading && (
-//           <>
-//             {filtered.length === 0 ? (
-//               <div className="text-gray-600 text-lg">No matches found.</div>
-//             ) : (
-//               <div className="grid grid-cols-2 gap-5">
-//                 {filtered.map((skill) => (
-//                   <SkillCard key={skill.id} skill={skill} />
-//                 ))}
-//               </div>
-//             )}
-//           </>
-//         )}
-//       </div>
-//     </div>
-//   );
-// }
-
-// function SkillCard({ skill }: any) {
-//   return (
-//     <div className="bg-white rounded-xl border shadow p-5 space-y-3">
-
-//       <div className="flex items-center gap-3">
-//         <img
-//           src={skill.user.avatar || "https://i.pravatar.cc/80"}
-//           className="w-12 h-12 rounded-full"
-//         />
-//         <div>
-//           <div className="font-semibold">
-//             {skill.user.firstName} {skill.user.lastName}
-//           </div>
-//           <div className="text-xs text-gray-500">{skill.level}</div>
-//         </div>
-//       </div>
-
-//       <div className="font-bold text-lg">{skill.name}</div>
-//       <p className="text-sm text-gray-600">{skill.description}</p>
-
-//       <div className="flex gap-2 flex-wrap">
-//         {skill.platform && (
-//           <span className="px-2 py-1 rounded bg-[#eef2ea] text-xs border">
-//             {skill.platform}
-//           </span>
-//         )}
-//       </div>
-
-//       <div className="flex gap-2 pt-2">
-//         <button className="flex-1 bg-[#4a5e27] text-white rounded py-2">
-//           Request swap
-//         </button>
-//        <button
-//    className="flex-1 border rounded py-2"
-//    onClick={() => window.location.href = `/dashboard/profile/${skill.user.id}`}
-// >
-//   View profile
-// </button>
-
-//       </div>
-//     </div>
-//   );
-// }
-
-
-
 "use client";
 
 import { useEffect, useState } from "react";
 import RequestSwapModal from "./RequestSwapModal";
+import Link from "next/link";
 
 
+/* ⭐ Star Rating Component */
+function StarRating({ rating }: { rating: number }) {
+  return (
+    <div className="flex items-center gap-1 text-yellow-500 text-sm">
+      {"★".repeat(Math.floor(rating))}
+      {"☆".repeat(5 - Math.floor(rating))}
+    </div>
+  );
+}
 
 export default function FindSkillsPage() {
   const [loading, setLoading] = useState(true);
@@ -215,10 +39,11 @@ export default function FindSkillsPage() {
     setLoading(false);
   }
 
-  const filtered = skills.filter((s) =>
-    s.name.toLowerCase().includes(search.toLowerCase()) &&
-    (level ? s.level === level : true) &&
-    (format ? s.platform === format : true)
+  const filtered = skills.filter(
+    (s) =>
+      s.name.toLowerCase().includes(search.toLowerCase()) &&
+      (level ? s.level === level : true) &&
+      (format ? s.platform === format : true)
   );
 
   return (
@@ -260,20 +85,50 @@ export default function FindSkillsPage() {
         <h1 className="text-2xl font-bold mb-6">Find skills to learn</h1>
 
         {loading && <p>Loading...</p>}
-
         {!loading && filtered.length === 0 && <p>No matches found.</p>}
 
         <div className="grid grid-cols-2 gap-5">
           {filtered.map((skill) => (
-            <div key={skill.id} className="bg-white border rounded-xl p-5">
-              <div className="font-semibold">
-                {skill.user.firstName} {skill.user.lastName}
+            <div key={skill.id} className="bg-white border rounded-xl p-5 shadow-sm">
+
+              {/* USER HEADER */}
+              <div className="flex items-center gap-4">
+                {skill.user.avatar ? (
+                  <img
+                    src={skill.user.avatar}
+                    alt="avatar"
+                    className="w-12 h-12 rounded-full object-cover border"
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-full bg-[#4a5e27] text-white flex items-center justify-center font-bold">
+                    {skill.user.firstName[0]}
+                    {skill.user.lastName[0]}
+                  </div>
+                )}
+
+                <div>
+                  <div className="font-semibold">
+                    {skill.user.firstName} {skill.user.lastName}
+                  </div>
+
+                  {/* ⭐ Rating */}
+                  <div className="flex items-center gap-2">
+                    <StarRating rating={skill.rating} />
+                    <span className="text-xs text-gray-500">
+                      {skill.rating} ({skill.reviewsCount} reviews)
+                    </span>
+                  </div>
+                </div>
               </div>
 
-              <div className="text-lg font-bold mt-2">{skill.name}</div>
-              <p className="text-sm text-gray-600">{skill.description}</p>
+              {/* SKILL INFO */}
+              <div className="mt-4">
+                <div className="text-lg font-bold">{skill.name}</div>
+                <p className="text-sm text-gray-600">{skill.description}</p>
+              </div>
 
-              <div className="flex gap-2 mt-4">
+              {/* ACTIONS */}
+              <div className="flex gap-2 mt-5">
                 <button
                   className="flex-1 bg-[#4a5e27] text-white rounded py-2"
                   onClick={() => {
@@ -284,14 +139,30 @@ export default function FindSkillsPage() {
                   Request Swap
                 </button>
 
-                <button
-                  className="flex-1 border rounded py-2"
-                  onClick={() =>
-                    (window.location.href = `/dashboard/profile/${skill.user.id}`)
-                  }
-                >
-                  View Profile
-                </button>
+          <Link
+  href={`/dashboard/profile/${skill.user.id}`}
+  className="
+    flex-1 
+    border 
+    border-gray-300
+    rounded-lg 
+    py-2 
+    text-center 
+    font-medium
+    text-gray-700
+    transition-all 
+    duration-200
+    hover:bg-[rgb(188,200,153)] 
+    hover:text-white 
+    hover:border-[#4a5e27]
+    hover:shadow-md
+    active:scale-[0.98]
+  "
+>
+  View Profile
+</Link>
+
+
               </div>
             </div>
           ))}

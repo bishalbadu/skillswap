@@ -1,203 +1,3 @@
-// "use client";
-
-// import { useState } from "react";
-
-// export default function OfferSkillsPage() {
-//   const [teachSkill, setTeachSkill] = useState("");
-//   const [teachLevel, setTeachLevel] = useState("Intermediate");
-//   const [teachDesc, setTeachDesc] = useState("");
-
-//   const [learnSkill, setLearnSkill] = useState("");
-//   const [learnLevel, setLearnLevel] = useState("New to it");
-//   const [learnGoal, setLearnGoal] = useState("");
-
-//   const [sessionLength, setSessionLength] = useState("60");
-//   const [selectedDays, setSelectedDays] = useState<string[]>([]);
-//   const [fromTime, setFromTime] = useState("");
-//   const [toTime, setToTime] = useState("");
-//   const [platform, setPlatform] = useState("Google Meet");
-//   const [publicListing, setPublicListing] = useState(true);
-
-//   const dayOptions = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-//   const timeOptions = ["30", "60", "90"];
-
-//   function toggleDay(day: string) {
-//     setSelectedDays(prev =>
-//       prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
-//     );
-//   }
-
-//   return (
-//     <div className="min-h-screen bg-[#f6f7f4] px-10 py-8">
-      
-//       <h1 className="text-3xl font-bold text-[#2b3d1f] mb-2">Add a Skill</h1>
-//       <p className="text-gray-600 mb-8">
-//         Share what you can teach and what you want to learn to get matched faster.
-//       </p>
-
-//       <div className="bg-white border border-[#e0e6d8] rounded-2xl shadow p-7 space-y-8 max-w-4xl">
-
-//         {/* TEACH SKILL */}
-//         <div className="space-y-4">
-//           <h2 className="text-lg font-semibold text-[#2b3d1f]">What can you teach?</h2>
-
-//           <div className="flex gap-3">
-//             <input
-//               type="text"
-//               value={teachSkill}
-//               onChange={e => setTeachSkill(e.target.value)}
-//               placeholder="e.g., Python, Guitar, Calculus I"
-//               className="w-full border border-[#ccd3c7] px-4 py-2 rounded-lg"
-//             />
-//             <select
-//               value={teachLevel}
-//               onChange={e => setTeachLevel(e.target.value)}
-//               className="border border-[#ccd3c7] px-4 py-2 rounded-lg"
-//             >
-//               <option>Beginner</option>
-//               <option>Intermediate</option>
-//               <option>Advanced</option>
-//             </select>
-//           </div>
-
-//           <textarea
-//             value={teachDesc}
-//             onChange={e => setTeachDesc(e.target.value)}
-//             placeholder="Describe what you cover in a session"
-//             className="w-full border border-[#ccd3c7] px-4 py-2 rounded-lg"
-//             rows={3}
-//           />
-
-//           <div>
-//             <p className="text-sm text-[#2b3d1f] font-medium mb-2">Preferred session length</p>
-//             <div className="flex gap-3">
-//               {timeOptions.map((t) => (
-//                 <button
-//                   key={t}
-//                   onClick={() => setSessionLength(t)}
-//                   className={`px-4 py-2 rounded-lg border ${sessionLength === t ? "bg-[#7e9c6c] text-white" : "bg-[#eef2ea]"}`}
-//                 >
-//                   {t} min
-//                 </button>
-//               ))}
-//             </div>
-//           </div>
-//         </div>
-
-//         {/* LEARN SKILL */}
-//         <div className="space-y-4">
-//           <h2 className="text-lg font-semibold text-[#2b3d1f]">What do you want to learn?</h2>
-
-//           <div className="flex gap-3">
-//             <input
-//               type="text"
-//               value={learnSkill}
-//               onChange={e => setLearnSkill(e.target.value)}
-//               placeholder="e.g., Graphic Design, Japanese"
-//               className="w-full border border-[#ccd3c7] px-4 py-2 rounded-lg"
-//             />
-//             <select
-//               value={learnLevel}
-//               onChange={e => setLearnLevel(e.target.value)}
-//               className="border border-[#ccd3c7] px-4 py-2 rounded-lg"
-//             >
-//               <option>New to it</option>
-//               <option>Some practice</option>
-//               <option>Comfortable</option>
-//             </select>
-//           </div>
-
-//           <textarea
-//             value={learnGoal}
-//             onChange={e => setLearnGoal(e.target.value)}
-//             placeholder="What do you want to achieve?"
-//             className="w-full border border-[#ccd3c7] px-4 py-2 rounded-lg"
-//             rows={3}
-//           />
-//         </div>
-
-//         {/* AVAILABILITY */}
-//         <div>
-//           <h2 className="text-lg font-semibold text-[#2b3d1f] mb-3">Availability</h2>
-
-//           <div className="flex gap-2 mb-3">
-//             {dayOptions.map((d) => (
-//               <button
-//                 key={d}
-//                 onClick={() => toggleDay(d)}
-//                 className={`px-3 py-1 rounded-full text-sm border ${
-//                   selectedDays.includes(d)
-//                     ? "bg-[#7e9c6c] text-white border-[#7e9c6c]"
-//                     : "bg-[#eef2ea] border-[#ccd3c7]"
-//                 }`}
-//               >
-//                 {d}
-//               </button>
-//             ))}
-//           </div>
-
-//           <div className="flex gap-3 items-center">
-//             <span className="text-sm font-medium">From</span>
-//             <input
-//               type="time"
-//               value={fromTime}
-//               onChange={e => setFromTime(e.target.value)}
-//               className="border border-[#ccd3c7] px-3 py-1 rounded-lg"
-//             />
-//             <span className="text-sm font-medium">To</span>
-//             <input
-//               type="time"
-//               value={toTime}
-//               onChange={e => setToTime(e.target.value)}
-//               className="border border-[#ccd3c7] px-3 py-1 rounded-lg"
-//             />
-//           </div>
-//         </div>
-
-//         {/* PLATFORM */}
-//         <div>
-//           <p className="text-sm text-[#2b3d1f] font-medium mb-2">Session platform preference</p>
-//           <div className="flex gap-3">
-//             {["Google Meet", "Zoom"].map((p) => (
-//               <button
-//                 key={p}
-//                 onClick={() => setPlatform(p)}
-//                 className={`px-4 py-2 rounded-lg border ${
-//                   platform === p ? "bg-[#7e9c6c] text-white border-[#7e9c6c]" : "bg-[#eef2ea] border-[#ccd3c7]"
-//                 }`}
-//               >
-//                 {p}
-//               </button>
-//             ))}
-//           </div>
-//         </div>
-
-//         {/* PUBLIC LISTING */}
-//         <div className="flex items-center gap-3">
-//           <input
-//             type="checkbox"
-//             checked={publicListing}
-//             onChange={() => setPublicListing(!publicListing)}
-//           />
-//           <p className="text-sm text-[#2b3d1f] font-medium">Show this skill on my public profile</p>
-//         </div>
-
-//         {/* ACTION BUTTONS */}
-//         <div className="flex justify-end gap-4 pt-4">
-//           <button className="px-5 py-2 rounded-lg border text-[#2b3d1f] hover:bg-[#f0f2ec]">
-//             Cancel
-//           </button>
-//           <button className="px-5 py-2 bg-[#7e9c6c] text-white rounded-lg hover:bg-[#6c875e]">
-//             Save Skill
-//           </button>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }
-
-
-
 "use client";
 
 import { useState } from "react";
@@ -206,10 +6,6 @@ export default function OfferSkillsPage() {
   const [teachSkill, setTeachSkill] = useState("");
   const [teachLevel, setTeachLevel] = useState("Intermediate");
   const [teachDesc, setTeachDesc] = useState("");
-
-  const [learnSkill, setLearnSkill] = useState("");
-  const [learnLevel, setLearnLevel] = useState("New to it");
-  const [learnGoal, setLearnGoal] = useState("");
 
   const [sessionLength, setSessionLength] = useState("60");
   const [selectedDays, setSelectedDays] = useState<string[]>([]);
@@ -225,23 +21,27 @@ export default function OfferSkillsPage() {
 
   function toggleDay(day: string) {
     setSelectedDays(prev =>
-      prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
+      prev.includes(day)
+        ? prev.filter(d => d !== day)
+        : [...prev, day]
     );
   }
 
   async function saveSkill() {
+    // 🔴 VALIDATION
     if (!teachSkill.trim()) {
-      alert("Please enter a skill you can teach");
+      alert("Please enter a skill you can teach.");
       return;
     }
-    if (!learnSkill.trim()) {
-      alert("Please enter a skill you want to learn");
+
+    if ((fromTime && !toTime) || (!fromTime && toTime)) {
+      alert("Please provide both start and end time.");
       return;
     }
 
     setBusy(true);
 
-    await fetch("/api/skills/offer", {
+    const res = await fetch("/api/skills/offer", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -249,49 +49,60 @@ export default function OfferSkillsPage() {
         teachSkill,
         teachLevel,
         teachDesc,
-        learnSkill,
-        learnLevel,
-        learnGoal,
         sessionLength,
         selectedDays,
         fromTime,
         toTime,
         platform,
-        publicListing
+        publicListing,
       }),
     });
 
     setBusy(false);
-    alert("Skill saved successfully!");
+
+    if (!res.ok) {
+      alert("Failed to save skill. Please try again.");
+      return;
+    }
+
+    // Reset form
+    setTeachSkill("");
+    setTeachDesc("");
+    setSelectedDays([]);
+    setFromTime("");
+    setToTime("");
+
+    alert("Skill offered successfully!");
   }
 
   return (
-    <div className="min-h-screen bg-[#f3f5ed] flex justify-center items-start py-12 px-6">
+    <div className="min-h-screen bg-[#f3f5ed] flex justify-center py-12 px-6">
+      <div className="bg-white border rounded-2xl shadow-lg p-7 space-y-8 w-full max-w-3xl">
 
-      <div className="bg-white border border-[#e0e6d8] rounded-2xl shadow-lg p-7 space-y-8 w-full max-w-3xl">
-
-        <h1 className="text-3xl font-bold text-[#2b3d1f]">Add a Skill</h1>
+        <h1 className="text-3xl font-bold text-[#2b3d1f]">
+          Offer a Skill
+        </h1>
         <p className="text-gray-600">
-          Tell others what you can teach — and what you want to learn.
+          Share a skill you can teach and help others learn.
         </p>
 
         {/* TEACH SECTION */}
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-[#2b3d1f]">What can you teach?</h2>
+          <h2 className="text-lg font-semibold">Skill Details</h2>
 
           <div className="flex gap-3">
             <input
               type="text"
               value={teachSkill}
               onChange={e => setTeachSkill(e.target.value)}
-              placeholder="e.g., Python, Guitar, Calculus I"
-              className="w-full border border-[#ccd3c7] px-4 py-2 rounded-lg"
+              placeholder="e.g., Python, Guitar, Calculus"
+              className="w-full border px-4 py-2 rounded-lg"
             />
 
             <select
               value={teachLevel}
               onChange={e => setTeachLevel(e.target.value)}
-              className="border border-[#ccd3c7] px-4 py-2 rounded-lg"
+              className="border px-4 py-2 rounded-lg"
             >
               <option>Beginner</option>
               <option>Intermediate</option>
@@ -302,65 +113,36 @@ export default function OfferSkillsPage() {
           <textarea
             value={teachDesc}
             onChange={e => setTeachDesc(e.target.value)}
-            placeholder="Describe your teaching approach..."
-            className="w-full border border-[#ccd3c7] px-4 py-2 rounded-lg"
+            placeholder="Brief description of how you teach (optional)"
+            className="w-full border px-4 py-2 rounded-lg"
             rows={3}
           />
-
-          <div>
-            <p className="text-sm font-medium mb-2 text-[#2b3d1f]">Preferred session length</p>
-            <div className="flex gap-3">
-              {timeOptions.map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setSessionLength(t)}
-                  className={`px-4 py-2 rounded-lg border ${
-                    sessionLength === t ? "bg-[#7e9c6c] text-white border-[#7e9c6c]" : "bg-[#eef2ea]"
-                  }`}
-                >
-                  {t} min
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
 
-        {/* LEARN SECTION */}
-        <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-[#2b3d1f]">What do you want to learn?</h2>
-
+        {/* SESSION LENGTH */}
+        <div>
+          <p className="text-sm font-medium mb-2">Session length</p>
           <div className="flex gap-3">
-            <input
-              type="text"
-              value={learnSkill}
-              onChange={e => setLearnSkill(e.target.value)}
-              placeholder="e.g., Japanese, Graphic Design"
-              className="w-full border border-[#ccd3c7] px-4 py-2 rounded-lg"
-            />
-
-            <select
-              value={learnLevel}
-              onChange={e => setLearnLevel(e.target.value)}
-              className="border border-[#ccd3c7] px-4 py-2 rounded-lg"
-            >
-              <option>New to it</option>
-              <option>Some practice</option>
-              <option>Comfortable</option>
-            </select>
+            {timeOptions.map((t) => (
+              <button
+                key={t}
+                onClick={() => setSessionLength(t)}
+                className={`px-4 py-2 rounded-lg border ${
+                  sessionLength === t
+                    ? "bg-[#7e9c6c] text-white"
+                    : "bg-[#eef2ea]"
+                }`}
+              >
+                {t} min
+              </button>
+            ))}
           </div>
-
-          <textarea
-            value={learnGoal}
-            onChange={e => setLearnGoal(e.target.value)}
-            placeholder="What do you want to achieve?"
-            className="w-full border border-[#ccd3c7] px-4 py-2 rounded-lg"
-            rows={3}
-          />
         </div>
 
         {/* AVAILABILITY */}
         <div>
-          <h2 className="text-lg font-semibold text-[#2b3d1f] mb-3">Availability</h2>
+          <p className="text-sm font-medium mb-2">Availability (optional)</p>
+
           <div className="flex gap-2 mb-3">
             {dayOptions.map((d) => (
               <button
@@ -368,8 +150,8 @@ export default function OfferSkillsPage() {
                 onClick={() => toggleDay(d)}
                 className={`px-3 py-1 rounded-full text-sm border ${
                   selectedDays.includes(d)
-                    ? "bg-[#7e9c6c] text-white border-[#7e9c6c]"
-                    : "bg-[#eef2ea] border-[#ccd3c7]"
+                    ? "bg-[#7e9c6c] text-white"
+                    : "bg-[#eef2ea]"
                 }`}
               >
                 {d}
@@ -378,19 +160,18 @@ export default function OfferSkillsPage() {
           </div>
 
           <div className="flex gap-3 items-center">
-            <span className="text-sm font-medium">From</span>
             <input
               type="time"
               value={fromTime}
               onChange={e => setFromTime(e.target.value)}
-              className="border border-[#ccd3c7] px-3 py-1 rounded-lg"
+              className="border px-3 py-1 rounded-lg"
             />
-            <span className="text-sm font-medium">To</span>
+            <span>to</span>
             <input
               type="time"
               value={toTime}
               onChange={e => setToTime(e.target.value)}
-              className="border border-[#ccd3c7] px-3 py-1 rounded-lg"
+              className="border px-3 py-1 rounded-lg"
             />
           </div>
         </div>
@@ -404,7 +185,9 @@ export default function OfferSkillsPage() {
                 key={p}
                 onClick={() => setPlatform(p)}
                 className={`px-4 py-2 rounded-lg border ${
-                  platform === p ? "bg-[#7e9c6c] text-white border-[#7e9c6c]" : "bg-[#eef2ea]"
+                  platform === p
+                    ? "bg-[#7e9c6c] text-white"
+                    : "bg-[#eef2ea]"
                 }`}
               >
                 {p}
@@ -414,25 +197,29 @@ export default function OfferSkillsPage() {
         </div>
 
         {/* PUBLIC LISTING */}
-        <div className="flex items-center gap-3 pt-2">
-          <input type="checkbox" checked={publicListing} onChange={() => setPublicListing(!publicListing)} />
-          <p className="text-sm font-medium">Show this skill on my public profile</p>
+        <div className="flex items-center gap-3">
+          <input
+            type="checkbox"
+            checked={publicListing}
+            onChange={() => setPublicListing(!publicListing)}
+          />
+          <p className="text-sm">
+            Show this skill on my public profile
+          </p>
         </div>
 
-        {/* ACTIONS */}
-        <div className="flex justify-end gap-4 pt-2">
-          <button className="px-5 py-2 rounded-lg border text-[#2b3d1f] hover:bg-[#f0f2ec]">
-            Cancel
-          </button>
-
+        {/* ACTION */}
+        <div className="flex justify-end">
           <button
             onClick={saveSkill}
             disabled={busy}
-            className={`px-5 py-2 rounded-lg text-white
-              ${busy ? "bg-gray-500 cursor-wait" : "bg-[#7e9c6c] hover:bg-[#6c875e]"}
-            `}
+            className={`px-6 py-2 rounded-lg text-white ${
+              busy
+                ? "bg-gray-400"
+                : "bg-[#7e9c6c] hover:bg-[#6c875e]"
+            }`}
           >
-            {busy ? "Saving..." : "Save Skill"}
+            {busy ? "Saving..." : "Offer Skill"}
           </button>
         </div>
       </div>

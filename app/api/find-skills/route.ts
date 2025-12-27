@@ -1,76 +1,3 @@
-// import { NextResponse } from "next/server";
-// import prisma from "@/lib/prisma";
-// import jwt from "jsonwebtoken";
-
-// export async function GET(req: Request) {
-//   try {
-//     const cookie = req.headers.get("cookie") || "";
-//     const token = cookie.match(/token=([^;]+)/)?.[1];
-
-//     if (!token) {
-//       return NextResponse.json({ skills: [], me: null });
-//     }
-
-//     let decoded: any;
-//     try {
-//       decoded = jwt.verify(token, process.env.JWT_SECRET!);
-//     } catch (e) {
-//       return NextResponse.json({ skills: [], me: null });
-//     }
-
-//     // Load the user including skills
-//     const me = await prisma.user.findUnique({
-//       where: { id: decoded.id },
-//       include: {
-//         skillsWanted: true,
-//         skillsOffered: true,
-//       },
-//     });
-
-//     if (!me) {
-//       return NextResponse.json({ skills: [], me: null });
-//     }
-
-//     // Extract user's "want" skills
-//     const wantSkills = me.skillsWanted.map((s) => s.name);
-
-//     // Find matching skills
-//     const matchedSkills = await prisma.skill.findMany({
-//       where: {
-//         name: { in: wantSkills },
-//         userOfferedId: { not: me.id },
-//         publicListing: true,
-//       },
-//       include: {
-//         userOffered: true,
-//       },
-//     });
-
-//     // Format output
-//     const formatted = matchedSkills.map((s) => ({
-//       id: s.id,
-//       name: s.name,
-//       level: s.level,
-//       description: s.description,
-//       platform: s.platform,
-//       user: s.userOffered,
-//     }));
-
-//     return NextResponse.json({
-//       skills: formatted,
-//       me: {
-//         id: me.id,
-//         SkillsWanted: me.skillsWanted,
-//         SkillsOffered: me.skillsOffered,
-//       },
-//     });
-//   } catch (err) {
-//     console.error("API ERROR /find-skills:", err);
-//     return NextResponse.json({ skills: [], me: null });
-//   }
-// }
-
-
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import jwt from "jsonwebtoken";
@@ -91,12 +18,13 @@ export async function GET(req: Request) {
       return NextResponse.json({ skills: [], me: null });
     }
 
-    // Load current user
+    // 🔹 Load current user + WANT skills
     const me = await prisma.user.findUnique({
       where: { id: decoded.id },
       include: {
-        skillsWanted: true,
-        skillsOffered: true,
+        skills: {
+          where: { type: "WANT" },
+        },
       },
     });
 
@@ -104,8 +32,8 @@ export async function GET(req: Request) {
       return NextResponse.json({ skills: [], me: null });
     }
 
-    // 🟢 Normalize wanted skills
-    const wantSkills = me.skillsWanted
+    // 🔹 Normalize wanted skill names
+    const wantSkills = me.skills
       .map((s) => s.name.trim().toLowerCase())
       .filter(Boolean);
 
@@ -113,10 +41,11 @@ export async function GET(req: Request) {
       return NextResponse.json({ skills: [], me });
     }
 
-    // 🟢 Find skills using flexible matching
+    // 🔹 Find OFFER skills from other users
     const matchedSkills = await prisma.skill.findMany({
       where: {
-        userOfferedId: { not: me.id },
+        type: "OFFER",
+        userId: { not: me.id },
         publicListing: true,
         OR: wantSkills.map((skill) => ({
           name: {
@@ -126,22 +55,28 @@ export async function GET(req: Request) {
         })),
       },
       include: {
-        userOffered: true,
+        user: true,
       },
+      orderBy: { createdAt: "desc" },
     });
 
-    // 🟢 Format response
+    // 🔹 Format response (with dummy rating)
     const formatted = matchedSkills.map((s) => ({
       id: s.id,
       name: s.name,
       level: s.level,
       description: s.description,
       platform: s.platform,
+
+      // ⭐ Dummy rating (future real reviews)
+      rating: 4.5,
+      reviewsCount: 55,
+
       user: {
-        id: s.userOffered?.id,
-        firstName: s.userOffered?.firstName,
-        lastName: s.userOffered?.lastName,
-        avatar: s.userOffered?.avatar,
+        id: s.user.id,
+        firstName: s.user.firstName,
+        lastName: s.user.lastName,
+        avatar: s.user.avatar,
       },
     }));
 
@@ -149,8 +84,7 @@ export async function GET(req: Request) {
       skills: formatted,
       me: {
         id: me.id,
-        SkillsWanted: me.skillsWanted,
-        SkillsOffered: me.skillsOffered,
+        skillsWanted: me.skills,
       },
     });
   } catch (err) {

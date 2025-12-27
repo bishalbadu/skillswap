@@ -1,281 +1,117 @@
-// "use client";
-
-// import { useEffect, useState } from "react";
-
-// export default function PublicProfilePage({
-//   params,
-// }: {
-//   params: { id: string };
-// }) {
-//   const id = params.id; // ✔ clean and supported
-
-//   const [user, setUser] = useState<any>(null);
-
-//   useEffect(() => {
-//     loadUser();
-//   }, []);
-
-//   async function loadUser() {
-//     const res = await fetch(`/api/profile/${id}`);
-//     const data = await res.json();
-//     setUser(data.user);
-//   }
-
-//   if (!user) return <div className="p-10 text-xl">Loading...</div>;
-
-//   return (
-//     <div className="min-h-screen bg-[#f8f8f5] p-10 font-['Inter']">
-//       <div className="max-w-4xl mx-auto space-y-8">
-
-//         {/* TOP CARD */}
-//         <div className="bg-white border border-[#d0d8cb] rounded-2xl shadow p-8 flex items-start gap-8">
-          
-//           {/* Avatar */}
-//           <img
-//             src={user.avatar || "https://i.pravatar.cc/120"}
-//             className="w-28 h-28 rounded-full border"
-//           />
-
-//           <div className="flex-1">
-//             <h1 className="text-3xl font-bold text-[#2b3d1f]">
-//               {user.firstName} {user.lastName}
-//             </h1>
-
-//             <p className="text-gray-600 mt-1 text-sm">
-//               {user.bio || "No bio added yet."}
-//             </p>
-
-//             {/* QUICK TAGS */}
-//             <div className="flex gap-2 mt-3 flex-wrap">
-//               <span className="px-3 py-1 bg-[#eef2ea] border rounded-full text-xs">
-//                 Joined: {new Date(user.createdAt).toLocaleDateString()}
-//               </span>
-//               <span className="px-3 py-1 bg-[#eef2ea] border rounded-full text-xs">
-//                 {user.skillsOffered.length} skills offered
-//               </span>
-//               <span className="px-3 py-1 bg-[#eef2ea] border rounded-full text-xs">
-//                 {user.skillsWanted.length} skills wanted
-//               </span>
-//             </div>
-
-//             {/* Actions */}
-//             <div className="flex gap-3 mt-5">
-//               <button className="px-5 py-2 bg-[#4a5e27] text-white rounded-lg">
-//                 Request Swap
-//               </button>
-
-//               <button className="px-5 py-2 border rounded-lg">
-//                 Message
-//               </button>
-//             </div>
-//           </div>
-//         </div>
-
-//         {/* SKILLS OFFERED */}
-//         <div className="bg-white border border-[#d0d8cb] rounded-2xl shadow p-8">
-//           <h2 className="text-xl font-semibold text-[#2b3d1f] mb-4">
-//             Skills they can teach
-//           </h2>
-
-//           {user.skillsOffered.length === 0 && (
-//             <p className="text-gray-600 text-sm">No skills listed.</p>
-//           )}
-
-//           <div className="space-y-4">
-//             {user.skillsOffered.map((s: any) => (
-//               <div
-//                 key={s.id}
-//                 className="border rounded-xl p-4 hover:bg-[#f4f7f1] transition"
-//               >
-//                 <div className="font-semibold text-lg">{s.name}</div>
-//                 <div className="text-sm text-gray-600">{s.level}</div>
-//                 <p className="mt-1 text-sm text-gray-700">{s.description}</p>
-
-//                 <div className="flex gap-2 mt-2 text-xs flex-wrap">
-//                   {s.platform && (
-//                     <span className="px-2 py-1 bg-[#eef2ea] border rounded-full">
-//                       {s.platform}
-//                     </span>
-//                   )}
-//                   {s.sessionLength && (
-//                     <span className="px-2 py-1 bg-[#eef2ea] border rounded-full">
-//                       {s.sessionLength} mins
-//                     </span>
-//                   )}
-//                 </div>
-//               </div>
-//             ))}
-//           </div>
-//         </div>
-
-//         {/* SKILLS THEY WANT TO LEARN */}
-//         <div className="bg-white border border-[#d0d8cb] rounded-2xl shadow p-8">
-//           <h2 className="text-xl font-semibold text-[#2b3d1f] mb-4">
-//             Skills they want to learn
-//           </h2>
-
-//           {user.skillsWanted.length === 0 && (
-//             <p className="text-gray-600 text-sm">No learning goals added.</p>
-//           )}
-
-//           <div className="space-y-4">
-//             {user.skillsWanted.map((s: any) => (
-//               <div
-//                 key={s.id}
-//                 className="border rounded-xl p-4 hover:bg-[#f4f7f1] transition"
-//               >
-//                 <div className="font-semibold text-lg">{s.name}</div>
-//                 <div className="text-sm text-gray-600">{s.learnLevel}</div>
-//                 <p className="mt-1 text-sm text-gray-700">{s.learnGoal}</p>
-//               </div>
-//             ))}
-//           </div>
-//         </div>
-
-//       </div>
-//     </div>
-//   );
-// }
-
-
 "use client";
 
 import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 
-export default function PublicProfilePage({ params }: { params: { id: string } }) {
-  const id = params.id;
-  const [user, setUser] = useState<any>(null);
+export default function PublicProfilePage() {
+  const { id } = useParams();
+  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState<any>(null);
 
   useEffect(() => {
-    fetch(`/api/profile/${id}`)
-      .then((res) => res.json())
-      .then((data) => setUser(data.user));
+    loadProfile();
   }, []);
 
-  if (!user) return <div className="p-10 text-xl">Loading...</div>;
+  async function loadProfile() {
+    const res = await fetch(`/api/profile/public/${id}`);
+    const data = await res.json();
+    setProfile(data);
+    setLoading(false);
+  }
 
-  // Generate initials if no avatar
-  const initials =
-    user.firstName?.[0]?.toUpperCase() +
-    (user.lastName?.[0]?.toUpperCase() || "");
+  if (loading) return <div className="p-10">Loading profile...</div>;
+  if (!profile?.user) return <div className="p-10">User not found.</div>;
+
+  const { user, skillsOffered } = profile;
 
   return (
-    <div className="min-h-screen bg-[#f8f8f5] p-10 font-['Inter']">
-      <div className="max-w-4xl mx-auto space-y-8">
+    <div className="max-w-5xl mx-auto p-10 space-y-8">
 
-        {/* TOP CARD */}
-        <div className="bg-white border border-[#d0d8cb] rounded-2xl shadow p-8 flex items-start gap-8">
+      {/* PROFILE HEADER */}
+      <div className="bg-white border rounded-2xl p-6 flex gap-6">
+        {user.avatar ? (
+          <img
+            src={user.avatar}
+            className="w-24 h-24 rounded-full object-cover border"
+          />
+        ) : (
+          <div className="w-24 h-24 rounded-full bg-[#4a5e27] text-white flex items-center justify-center text-3xl font-bold">
+            {user.firstName[0]}
+            {user.lastName[0]}
+          </div>
+        )}
 
-          {/* Avatar OR Initials */}
-          {user.avatar ? (
-            <img
-              src={user.avatar}
-              className="w-28 h-28 rounded-full object-cover border"
-            />
-          ) : (
-            <div className="w-28 h-28 rounded-full bg-[#4a5e27] flex items-center justify-center text-white text-3xl font-bold border">
-              {initials}
-            </div>
-          )}
+        <div>
+          <h1 className="text-2xl font-bold">
+            {user.firstName} {user.lastName}
+          </h1>
 
-          {/* Right side */}
-          <div className="flex-1">
-            <h1 className="text-3xl font-bold text-[#2b3d1f]">
-              {user.firstName} {user.lastName}
-            </h1>
+          {/* ⭐ Rating */}
+          <div className="flex items-center gap-2 mt-1">
+            <StarRating rating={user.rating} />
+            <span className="text-sm text-gray-600">
+              {user.rating} ({user.reviewsCount} reviews)
+            </span>
+          </div>
 
-            <p className="text-gray-600 mt-1 text-sm">
-              {user.bio || "No bio added yet."}
-            </p>
+          <p className="text-gray-700 mt-3 max-w-xl">
+            {user.bio || "No bio provided."}
+          </p>
 
-            {/* QUICK TAGS */}
-            <div className="flex gap-2 mt-3 flex-wrap">
-              <span className="px-3 py-1 bg-[#eef2ea] border rounded-full text-xs">
-                Joined: {new Date(user.createdAt).toLocaleDateString()}
-              </span>
-              <span className="px-3 py-1 bg-[#eef2ea] border rounded-full text-xs">
-                {user.skillsOffered.length} skills offered
-              </span>
-              <span className="px-3 py-1 bg-[#eef2ea] border rounded-full text-xs">
-                {user.skillsWanted.length} skills wanted
-              </span>
-            </div>
+          <p className="text-xs text-gray-500 mt-2">
+            Member since {new Date(user.createdAt).toLocaleDateString()}
+          </p>
+        </div>
+      </div>
 
-            {/* Actions */}
-            <div className="flex gap-3 mt-5">
-              <button className="px-5 py-2 bg-[#4a5e27] text-white rounded-lg">
+      {/* SKILLS OFFERED */}
+      <div>
+        <h2 className="text-xl font-semibold mb-4">Skills Offered</h2>
+
+        {skillsOffered.length === 0 && (
+          <p className="text-gray-600">No public skills available.</p>
+        )}
+
+        <div className="grid grid-cols-2 gap-5">
+          {skillsOffered.map((skill: any) => (
+            <div key={skill.id} className="bg-white border rounded-xl p-5">
+              <div className="text-lg font-bold">{skill.name}</div>
+              <p className="text-sm text-gray-600 mt-1">{skill.description}</p>
+
+              <div className="text-sm mt-3 space-y-1 text-gray-700">
+                <div>Level: {skill.level}</div>
+                <div>Platform: {skill.platform}</div>
+                <div>
+                  Availability: {skill.days} ({skill.timeFrom} – {skill.timeTo})
+                </div>
+                <div>Session: {skill.sessionLength} mins</div>
+              </div>
+
+              <button className="mt-4 w-full bg-[#4a5e27] text-white rounded py-2">
                 Request Swap
               </button>
-
-              <button className="px-5 py-2 border rounded-lg">
-                Message
-              </button>
             </div>
-          </div>
+          ))}
         </div>
-
-        {/* SKILLS OFFERED */}
-        <div className="bg-white border border-[#d0d8cb] rounded-2xl shadow p-8">
-          <h2 className="text-xl font-semibold text-[#2b3d1f] mb-4">
-            Skills they can teach
-          </h2>
-
-          {user.skillsOffered.length === 0 && (
-            <p className="text-gray-600 text-sm">No skills listed.</p>
-          )}
-
-          <div className="space-y-4">
-            {user.skillsOffered.map((s: any) => (
-              <div
-                key={s.id}
-                className="border rounded-xl p-4 hover:bg-[#f4f7f1] transition"
-              >
-                <div className="font-semibold text-lg">{s.name}</div>
-                <div className="text-sm text-gray-600">{s.level}</div>
-                <p className="mt-1 text-sm text-gray-700">{s.description}</p>
-
-                <div className="flex gap-2 mt-2 text-xs flex-wrap">
-                  {s.platform && (
-                    <span className="px-2 py-1 bg-[#eef2ea] border rounded-full">
-                      {s.platform}
-                    </span>
-                  )}
-                  {s.sessionLength && (
-                    <span className="px-2 py-1 bg-[#eef2ea] border rounded-full">
-                      {s.sessionLength} mins
-                    </span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* SKILLS THEY WANT TO LEARN */}
-        <div className="bg-white border border-[#d0d8cb] rounded-2xl shadow p-8">
-          <h2 className="text-xl font-semibold text-[#2b3d1f] mb-4">
-            Skills they want to learn
-          </h2>
-
-          {user.skillsWanted.length === 0 && (
-            <p className="text-gray-600 text-sm">No learning goals added.</p>
-          )}
-
-          <div className="space-y-4">
-            {user.skillsWanted.map((s: any) => (
-              <div
-                key={s.id}
-                className="border rounded-xl p-4 hover:bg-[#f4f7f1] transition"
-              >
-                <div className="font-semibold text-lg">{s.name}</div>
-                <div className="text-sm text-gray-600">{s.learnLevel}</div>
-                <p className="mt-1 text-sm text-gray-700">{s.learnGoal}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
       </div>
+
+      {/* REVIEWS PLACEHOLDER */}
+      <div className="bg-white border rounded-xl p-6">
+        <h2 className="text-lg font-semibold mb-2">Reviews</h2>
+        <p className="text-gray-600 text-sm">
+          Review system will be introduced in a future update.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* ⭐ STAR RATING COMPONENT */
+function StarRating({ rating }: { rating: number }) {
+  return (
+    <div className="text-yellow-500">
+      {"★".repeat(Math.floor(rating))}
+      {"☆".repeat(5 - Math.floor(rating))}
     </div>
   );
 }
