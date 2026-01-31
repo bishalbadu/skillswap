@@ -1,8 +1,12 @@
 // "use client";
 
 // import { useState } from "react";
+// import { useSearchParams } from "next/navigation";
+// import { useEffect } from "react";
 
 // export default function OfferSkillsPage() {
+//   const searchParams = useSearchParams();
+
 //   const [teachSkill, setTeachSkill] = useState("");
 //   const [teachLevel, setTeachLevel] = useState("Intermediate");
 //   const [teachDesc, setTeachDesc] = useState("");
@@ -16,26 +20,36 @@
 
 //   const [busy, setBusy] = useState(false);
 
+//    useEffect(() => {
+//     const skillFromProfile = searchParams.get("skill");
+//     if (skillFromProfile) {
+//       setTeachSkill(skillFromProfile);
+//     }
+//   }, [searchParams]);
+
 //   const dayOptions = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 //   const timeOptions = ["30", "60", "90"];
+  
 
 //   function toggleDay(day: string) {
-//     setSelectedDays(prev =>
+//     setSelectedDays((prev) =>
 //       prev.includes(day)
-//         ? prev.filter(d => d !== day)
+//         ? prev.filter((d) => d !== day)
 //         : [...prev, day]
 //     );
 //   }
 
 //   async function saveSkill() {
-//     // 🔴 VALIDATION
 //     if (!teachSkill.trim()) {
 //       alert("Please enter a skill you can teach.");
 //       return;
 //     }
 
-//     if ((fromTime && !toTime) || (!fromTime && toTime)) {
-//       alert("Please provide both start and end time.");
+//     if (
+//       selectedDays.length > 0 &&
+//       (!fromTime || !toTime)
+//     ) {
+//       alert("Please provide time range for selected days.");
 //       return;
 //     }
 
@@ -61,18 +75,18 @@
 //     setBusy(false);
 
 //     if (!res.ok) {
-//       alert("Failed to save skill. Please try again.");
+//       alert("Failed to save skill.");
 //       return;
 //     }
 
-//     // Reset form
+//     // Reset
 //     setTeachSkill("");
 //     setTeachDesc("");
 //     setSelectedDays([]);
 //     setFromTime("");
 //     setToTime("");
 
-//     alert("Skill offered successfully!");
+//     alert("Skill and availability added successfully!");
 //   }
 
 //   return (
@@ -82,26 +96,22 @@
 //         <h1 className="text-3xl font-bold text-[#2b3d1f]">
 //           Offer a Skill
 //         </h1>
-//         <p className="text-gray-600">
-//           Share a skill you can teach and help others learn.
-//         </p>
 
-//         {/* TEACH SECTION */}
+//         {/* SKILL DETAILS */}
 //         <div className="space-y-4">
 //           <h2 className="text-lg font-semibold">Skill Details</h2>
 
 //           <div className="flex gap-3">
 //             <input
-//               type="text"
 //               value={teachSkill}
-//               onChange={e => setTeachSkill(e.target.value)}
-//               placeholder="e.g., Python, Guitar, Calculus"
+//               onChange={(e) => setTeachSkill(e.target.value)}
+//               placeholder="e.g., Python, Guitar"
 //               className="w-full border px-4 py-2 rounded-lg"
 //             />
 
 //             <select
 //               value={teachLevel}
-//               onChange={e => setTeachLevel(e.target.value)}
+//               onChange={(e) => setTeachLevel(e.target.value)}
 //               className="border px-4 py-2 rounded-lg"
 //             >
 //               <option>Beginner</option>
@@ -112,8 +122,8 @@
 
 //           <textarea
 //             value={teachDesc}
-//             onChange={e => setTeachDesc(e.target.value)}
-//             placeholder="Brief description of how you teach (optional)"
+//             onChange={(e) => setTeachDesc(e.target.value)}
+//             placeholder="How you teach (optional)"
 //             className="w-full border px-4 py-2 rounded-lg"
 //             rows={3}
 //           />
@@ -141,14 +151,16 @@
 
 //         {/* AVAILABILITY */}
 //         <div>
-//           <p className="text-sm font-medium mb-2">Availability (optional)</p>
+//           <p className="text-sm font-medium mb-2">
+//             Availability (creates bookable slots)
+//           </p>
 
-//           <div className="flex gap-2 mb-3">
+//           <div className="flex gap-2 mb-3 flex-wrap">
 //             {dayOptions.map((d) => (
 //               <button
 //                 key={d}
 //                 onClick={() => toggleDay(d)}
-//                 className={`px-3 py-1 rounded-full text-sm border ${
+//                 className={`px-3 py-1 rounded-full border ${
 //                   selectedDays.includes(d)
 //                     ? "bg-[#7e9c6c] text-white"
 //                     : "bg-[#eef2ea]"
@@ -163,14 +175,14 @@
 //             <input
 //               type="time"
 //               value={fromTime}
-//               onChange={e => setFromTime(e.target.value)}
+//               onChange={(e) => setFromTime(e.target.value)}
 //               className="border px-3 py-1 rounded-lg"
 //             />
 //             <span>to</span>
 //             <input
 //               type="time"
 //               value={toTime}
-//               onChange={e => setToTime(e.target.value)}
+//               onChange={(e) => setToTime(e.target.value)}
 //               className="border px-3 py-1 rounded-lg"
 //             />
 //           </div>
@@ -203,9 +215,7 @@
 //             checked={publicListing}
 //             onChange={() => setPublicListing(!publicListing)}
 //           />
-//           <p className="text-sm">
-//             Show this skill on my public profile
-//           </p>
+//           <p className="text-sm">Show this skill publicly</p>
 //         </div>
 
 //         {/* ACTION */}
@@ -230,44 +240,77 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 
 export default function OfferSkillsPage() {
+  const searchParams = useSearchParams();
+
   const [teachSkill, setTeachSkill] = useState("");
   const [teachLevel, setTeachLevel] = useState("Intermediate");
   const [teachDesc, setTeachDesc] = useState("");
 
   const [sessionLength, setSessionLength] = useState("60");
-  const [selectedDays, setSelectedDays] = useState<string[]>([]);
+
+  // ✅ NEW (date based)
+  const [selectedDate, setSelectedDate] = useState("");
   const [fromTime, setFromTime] = useState("");
   const [toTime, setToTime] = useState("");
+
   const [platform, setPlatform] = useState("Google Meet");
   const [publicListing, setPublicListing] = useState(true);
 
   const [busy, setBusy] = useState(false);
 
-  const dayOptions = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  /* =====================================================
+     Auto fill skill from profile
+  ===================================================== */
+  useEffect(() => {
+    const skillFromProfile = searchParams.get("skill");
+    if (skillFromProfile) setTeachSkill(skillFromProfile);
+  }, [searchParams]);
+
   const timeOptions = ["30", "60", "90"];
 
-  function toggleDay(day: string) {
-    setSelectedDays((prev) =>
-      prev.includes(day)
-        ? prev.filter((d) => d !== day)
-        : [...prev, day]
-    );
+  /* =====================================================
+     ⭐ AUTO SET END TIME (better UX)
+     When user picks start time, auto calculate end time
+  ===================================================== */
+  function handleFromTimeChange(value: string) {
+    setFromTime(value);
+
+    if (!value) return;
+
+    const minutes = Number(sessionLength);
+
+    const start = new Date(`1970-01-01T${value}`);
+    const end = new Date(start.getTime() + minutes * 60000);
+
+    setToTime(end.toTimeString().slice(0, 5));
   }
 
+  /* =====================================================
+     SAVE SKILL
+  ===================================================== */
   async function saveSkill() {
     if (!teachSkill.trim()) {
       alert("Please enter a skill you can teach.");
       return;
     }
 
-    if (
-      selectedDays.length > 0 &&
-      (!fromTime || !toTime)
-    ) {
-      alert("Please provide time range for selected days.");
+    if (!selectedDate || !fromTime || !toTime) {
+      alert("Please select date and time.");
+      return;
+    }
+
+    /* ===== EXACT SESSION VALIDATION ===== */
+    const diffMinutes =
+      (new Date(`1970-01-01T${toTime}`).getTime() -
+        new Date(`1970-01-01T${fromTime}`).getTime()) /
+      60000;
+
+    if (diffMinutes !== Number(sessionLength)) {
+      alert("Time must exactly match session length");
       return;
     }
 
@@ -282,7 +325,7 @@ export default function OfferSkillsPage() {
         teachLevel,
         teachDesc,
         sessionLength,
-        selectedDays,
+        selectedDate, // ⭐ send date
         fromTime,
         toTime,
         platform,
@@ -297,16 +340,19 @@ export default function OfferSkillsPage() {
       return;
     }
 
-    // Reset
+    // reset
     setTeachSkill("");
     setTeachDesc("");
-    setSelectedDays([]);
+    setSelectedDate("");
     setFromTime("");
     setToTime("");
 
     alert("Skill and availability added successfully!");
   }
 
+  /* =====================================================
+     UI (DESIGN UNCHANGED)
+  ===================================================== */
   return (
     <div className="min-h-screen bg-[#f3f5ed] flex justify-center py-12 px-6">
       <div className="bg-white border rounded-2xl shadow-lg p-7 space-y-8 w-full max-w-3xl">
@@ -350,6 +396,7 @@ export default function OfferSkillsPage() {
         {/* SESSION LENGTH */}
         <div>
           <p className="text-sm font-medium mb-2">Session length</p>
+
           <div className="flex gap-3">
             {timeOptions.map((t) => (
               <button
@@ -367,36 +414,29 @@ export default function OfferSkillsPage() {
           </div>
         </div>
 
-        {/* AVAILABILITY */}
+        {/* AVAILABILITY (ONLY LOGIC UPDATED) */}
         <div>
           <p className="text-sm font-medium mb-2">
-            Availability (creates bookable slots)
+            Availability (exact session time)
           </p>
-
-          <div className="flex gap-2 mb-3 flex-wrap">
-            {dayOptions.map((d) => (
-              <button
-                key={d}
-                onClick={() => toggleDay(d)}
-                className={`px-3 py-1 rounded-full border ${
-                  selectedDays.includes(d)
-                    ? "bg-[#7e9c6c] text-white"
-                    : "bg-[#eef2ea]"
-                }`}
-              >
-                {d}
-              </button>
-            ))}
-          </div>
 
           <div className="flex gap-3 items-center">
             <input
-              type="time"
-              value={fromTime}
-              onChange={(e) => setFromTime(e.target.value)}
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
               className="border px-3 py-1 rounded-lg"
             />
+
+            <input
+              type="time"
+              value={fromTime}
+              onChange={(e) => handleFromTimeChange(e.target.value)}
+              className="border px-3 py-1 rounded-lg"
+            />
+
             <span>to</span>
+
             <input
               type="time"
               value={toTime}
@@ -409,6 +449,7 @@ export default function OfferSkillsPage() {
         {/* PLATFORM */}
         <div>
           <p className="text-sm font-medium mb-2">Session platform</p>
+
           <div className="flex gap-3">
             {["Google Meet", "Zoom"].map((p) => (
               <button

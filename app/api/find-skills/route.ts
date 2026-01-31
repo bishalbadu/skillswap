@@ -32,7 +32,6 @@
 //       return NextResponse.json({ skills: [], me: null });
 //     }
 
-//     // 🔹 Normalize wanted skill names
 //     const wantSkills = me.skills
 //       .map((s) => s.name.trim().toLowerCase())
 //       .filter(Boolean);
@@ -41,12 +40,18 @@
 //       return NextResponse.json({ skills: [], me });
 //     }
 
-//     // 🔹 Find OFFER skills from other users
+//     // 🔹 Find OFFER skills with FREE slots
 //     const matchedSkills = await prisma.skill.findMany({
 //       where: {
 //         type: "OFFER",
 //         userId: { not: me.id },
 //         publicListing: true,
+
+//         // ⭐ SLOT-AWARE FILTER
+//         slots: {
+//           some: { isBooked: false },
+//         },
+
 //         OR: wantSkills.map((skill) => ({
 //           name: {
 //             contains: skill,
@@ -56,11 +61,14 @@
 //       },
 //       include: {
 //         user: true,
+//         slots: {
+//           where: { isBooked: false }, // only free slots
+//           orderBy: { day: "asc" },
+//         },
 //       },
 //       orderBy: { createdAt: "desc" },
 //     });
 
-//     // 🔹 Format response (with dummy rating)
 //     const formatted = matchedSkills.map((s) => ({
 //       id: s.id,
 //       name: s.name,
@@ -68,9 +76,15 @@
 //       description: s.description,
 //       platform: s.platform,
 
-//       // ⭐ Dummy rating (future real reviews)
 //       rating: 4.5,
 //       reviewsCount: 55,
+
+//       slots: s.slots.map((slot) => ({
+//         id: slot.id,
+//         day: slot.day,
+//         timeFrom: slot.timeFrom,
+//         timeTo: slot.timeTo,
+//       })),
 
 //       user: {
 //         id: s.user.id,
@@ -114,7 +128,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ skills: [], me: null });
     }
 
-    // 🔹 Load current user + WANT skills
+    // 👤 Load current user + WANT skills
     const me = await prisma.user.findUnique({
       where: { id: decoded.id },
       include: {
@@ -136,16 +150,20 @@ export async function GET(req: Request) {
       return NextResponse.json({ skills: [], me });
     }
 
-    // 🔹 Find OFFER skills with FREE slots
+    // 🔍 Find APPROVED + PUBLIC + ACTIVE offer skills
     const matchedSkills = await prisma.skill.findMany({
       where: {
         type: "OFFER",
-        userId: { not: me.id },
+        status: "APPROVED",              // ✅ ADMIN MODERATION
         publicListing: true,
+        userId: { not: me.id },
 
-        // ⭐ SLOT-AWARE FILTER
+        user: {
+          status: "ACTIVE",              // ✅ BLOCK SUSPENDED USERS
+        },
+
         slots: {
-          some: { isBooked: false },
+          some: { isBooked: false },     // ✅ SLOT-AWARE
         },
 
         OR: wantSkills.map((skill) => ({
@@ -156,31 +174,42 @@ export async function GET(req: Request) {
         })),
       },
       include: {
-        user: true,
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            avatar: true,
+          },
+        },
         slots: {
-          where: { isBooked: false }, // only free slots
+          where: { isBooked: false },
           orderBy: { day: "asc" },
+          select: {
+            id: true,
+            day: true,
+            timeFrom: true,
+            timeTo: true,
+          },
         },
       },
       orderBy: { createdAt: "desc" },
     });
 
+    // 🧼 Defensive formatting (VERY IMPORTANT)
     const formatted = matchedSkills.map((s) => ({
       id: s.id,
       name: s.name,
-      level: s.level,
-      description: s.description,
-      platform: s.platform,
 
-      rating: 4.5,
-      reviewsCount: 55,
+      level: s.level ?? "Not specified",
+      description: s.description ?? "No description provided",
+      platform: s.platform ?? "Flexible",
+      sessionLength: s.sessionLength ?? null,
 
-      slots: s.slots.map((slot) => ({
-        id: slot.id,
-        day: slot.day,
-        timeFrom: slot.timeFrom,
-        timeTo: slot.timeTo,
-      })),
+      rating: 4.5,          // placeholder (future review model)
+      reviewsCount: 55,     // placeholder
+
+      slots: s.slots,
 
       user: {
         id: s.user.id,
@@ -198,7 +227,10 @@ export async function GET(req: Request) {
       },
     });
   } catch (err) {
-    console.error("API ERROR /find-skills:", err);
-    return NextResponse.json({ skills: [], me: null });
+    console.error("FIND SKILLS API ERROR:", err);
+    return NextResponse.json(
+      { skills: [], me: null },
+      { status: 500 }
+    );
   }
 }
