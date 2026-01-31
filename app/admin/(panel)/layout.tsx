@@ -23,6 +23,7 @@ export default function AdminLayout({
           <SidebarLink href="/admin/users" label="User Management" />
           <SidebarLink href="/admin/skills" label="Skill Moderation" />
           <SidebarLink href="/admin/swaps" label="Swap Requests" />
+          <SidebarLink href="/admin/reports" label="Reports" />
         </nav>
 
         {/* FOOTER */}
