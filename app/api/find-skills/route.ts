@@ -1,3 +1,5 @@
+// any can sent request even if not in want list
+
 // import { NextResponse } from "next/server";
 // import prisma from "@/lib/prisma";
 // import jwt from "jsonwebtoken";
@@ -18,7 +20,7 @@
 //       return NextResponse.json({ skills: [], me: null });
 //     }
 
-//     // 🔹 Load current user + WANT skills
+//     // 👤 Load current user + WANT skills
 //     const me = await prisma.user.findUnique({
 //       where: { id: decoded.id },
 //       include: {
@@ -40,16 +42,20 @@
 //       return NextResponse.json({ skills: [], me });
 //     }
 
-//     // 🔹 Find OFFER skills with FREE slots
+//     // 🔍 Find APPROVED + PUBLIC + ACTIVE offer skills
 //     const matchedSkills = await prisma.skill.findMany({
 //       where: {
 //         type: "OFFER",
-//         userId: { not: me.id },
+//         status: "APPROVED",              // ✅ ADMIN MODERATION
 //         publicListing: true,
+//         userId: { not: me.id },
 
-//         // ⭐ SLOT-AWARE FILTER
+//         user: {
+//           status: "ACTIVE",              // ✅ BLOCK SUSPENDED USERS
+//         },
+
 //         slots: {
-//           some: { isBooked: false },
+//           some: { isBooked: false },     // ✅ SLOT-AWARE
 //         },
 
 //         OR: wantSkills.map((skill) => ({
@@ -60,31 +66,44 @@
 //         })),
 //       },
 //       include: {
-//         user: true,
-//         slots: {
-//           where: { isBooked: false }, // only free slots
-//           orderBy: { day: "asc" },
+//         user: {
+//           select: {
+//             id: true,
+//             firstName: true,
+//             lastName: true,
+//             avatar: true,
+//           },
 //         },
+//         slots: {
+//   where: { isBooked: false },
+//   orderBy: { date: "asc" },   // ⭐ better than day
+//   select: {
+//     id: true,
+//     day: true,
+//     date: true,              // ⭐ THIS IS THE REAL FIELD
+//     timeFrom: true,
+//     timeTo: true,
+//   },
+// },
+
 //       },
 //       orderBy: { createdAt: "desc" },
 //     });
 
+//     // 🧼 Defensive formatting (VERY IMPORTANT)
 //     const formatted = matchedSkills.map((s) => ({
 //       id: s.id,
 //       name: s.name,
-//       level: s.level,
-//       description: s.description,
-//       platform: s.platform,
 
-//       rating: 4.5,
-//       reviewsCount: 55,
+//       level: s.level ?? "Not specified",
+//       description: s.description ?? "No description provided",
+//       platform: s.platform ?? "Flexible",
+//       sessionLength: s.sessionLength ?? null,
 
-//       slots: s.slots.map((slot) => ({
-//         id: slot.id,
-//         day: slot.day,
-//         timeFrom: slot.timeFrom,
-//         timeTo: slot.timeTo,
-//       })),
+//       rating: 4.5,          // placeholder (future review model)
+//       reviewsCount: 55,     // placeholder
+
+//       slots: s.slots,
 
 //       user: {
 //         id: s.user.id,
@@ -102,8 +121,11 @@
 //       },
 //     });
 //   } catch (err) {
-//     console.error("API ERROR /find-skills:", err);
-//     return NextResponse.json({ skills: [], me: null });
+//     console.error("FIND SKILLS API ERROR:", err);
+//     return NextResponse.json(
+//       { skills: [], me: null },
+//       { status: 500 }
+//     );
 //   }
 // }
 
@@ -114,6 +136,7 @@ import jwt from "jsonwebtoken";
 
 export async function GET(req: Request) {
   try {
+    /* ================= AUTH ================= */
     const cookie = req.headers.get("cookie") || "";
     const token = cookie.match(/token=([^;]+)/)?.[1];
 
@@ -128,7 +151,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ skills: [], me: null });
     }
 
-    // 👤 Load current user + WANT skills
+    /* ================= LOAD USER + WANT SKILLS ================= */
     const me = await prisma.user.findUnique({
       where: { id: decoded.id },
       include: {
@@ -150,20 +173,20 @@ export async function GET(req: Request) {
       return NextResponse.json({ skills: [], me });
     }
 
-    // 🔍 Find APPROVED + PUBLIC + ACTIVE offer skills
+    /* ================= FIND MATCHED OFFER SKILLS ================= */
     const matchedSkills = await prisma.skill.findMany({
       where: {
         type: "OFFER",
-        status: "APPROVED",              // ✅ ADMIN MODERATION
+        status: "APPROVED",
         publicListing: true,
         userId: { not: me.id },
 
         user: {
-          status: "ACTIVE",              // ✅ BLOCK SUSPENDED USERS
+          status: "ACTIVE",
         },
 
         slots: {
-          some: { isBooked: false },     // ✅ SLOT-AWARE
+          some: { isBooked: false },
         },
 
         OR: wantSkills.map((skill) => ({
@@ -173,6 +196,7 @@ export async function GET(req: Request) {
           },
         })),
       },
+
       include: {
         user: {
           select: {
@@ -182,43 +206,74 @@ export async function GET(req: Request) {
             avatar: true,
           },
         },
+
         slots: {
           where: { isBooked: false },
-          orderBy: { day: "asc" },
+          orderBy: { date: "asc" },
           select: {
             id: true,
             day: true,
+            date: true,
             timeFrom: true,
             timeTo: true,
           },
         },
       },
+
       orderBy: { createdAt: "desc" },
     });
 
-    // 🧼 Defensive formatting (VERY IMPORTANT)
-    const formatted = matchedSkills.map((s) => ({
-      id: s.id,
-      name: s.name,
-
-      level: s.level ?? "Not specified",
-      description: s.description ?? "No description provided",
-      platform: s.platform ?? "Flexible",
-      sessionLength: s.sessionLength ?? null,
-
-      rating: 4.5,          // placeholder (future review model)
-      reviewsCount: 55,     // placeholder
-
-      slots: s.slots,
-
-      user: {
-        id: s.user.id,
-        firstName: s.user.firstName,
-        lastName: s.user.lastName,
-        avatar: s.user.avatar,
+    /* ================= GET ALL USER PENDING REQUESTS (OPTIMIZED) ================= */
+    const myPendingRequests = await prisma.swapRequest.findMany({
+      where: {
+        requesterId: me.id,
+        status: "PENDING",
       },
-    }));
+      select: {
+        skillId: true,
+      },
+    });
 
+    const requestedSkillIds = new Set(
+      myPendingRequests.map((r) => r.skillId)
+    );
+
+    /* ================= FORMAT RESPONSE ================= */
+    const formatted = matchedSkills.map((s) => {
+      const canRequest = wantSkills.some((w) =>
+        s.name.toLowerCase().includes(w)
+      );
+
+      const alreadyRequested = requestedSkillIds.has(s.id);
+
+      return {
+        id: s.id,
+        name: s.name,
+
+        level: s.level ?? "Not specified",
+        description: s.description ?? "No description provided",
+        platform: s.platform ?? "Flexible",
+        sessionLength: s.sessionLength ?? null,
+
+        rating: 4.5,
+        reviewsCount: 55,
+
+        slots: s.slots,
+
+        user: {
+          id: s.user.id,
+          firstName: s.user.firstName,
+          lastName: s.user.lastName,
+          avatar: s.user.avatar,
+        },
+
+        // ⭐ NEW FLAGS FOR FRONTEND
+        canRequest,
+        alreadyRequested,
+      };
+    });
+
+    /* ================= RESPONSE ================= */
     return NextResponse.json({
       skills: formatted,
       me: {
@@ -228,6 +283,7 @@ export async function GET(req: Request) {
     });
   } catch (err) {
     console.error("FIND SKILLS API ERROR:", err);
+
     return NextResponse.json(
       { skills: [], me: null },
       { status: 500 }

@@ -88,13 +88,15 @@ export async function GET(req: Request) {
           },
         },
         slot: {
-          select: {
-            id: true,
-            day: true,
-            timeFrom: true,
-            timeTo: true,
-          },
-        },
+  select: {
+    id: true,
+    day: true,
+    date: true,   // ⭐ ADD
+    timeFrom: true,
+    timeTo: true,
+  },
+},
+
       },
       orderBy: {
         createdAt: "desc",

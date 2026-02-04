@@ -101,11 +101,13 @@ export default function RequestSwapModal({
   open,
   skill,
   slot,
+  user, 
   onClose,
 }: {
   open: boolean;
   skill: any;
   slot: any;
+  user: any; 
   onClose: () => void;
 }) {
   const [message, setMessage] = useState("");
@@ -155,7 +157,8 @@ export default function RequestSwapModal({
           <br />
           <b>Slot:</b> {slot.day} {slot.timeFrom}–{slot.timeTo}
           <br />
-          <b>To:</b> {skill.user.firstName} {skill.user.lastName}
+          <b>To:</b> {user.firstName} {user.lastName}
+
         </p>
 
         <textarea
