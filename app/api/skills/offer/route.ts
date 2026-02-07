@@ -329,6 +329,17 @@ export async function GET() {
 
     const decoded: any = jwt.verify(token, JWT_SECRET);
     const userId = Number(decoded?.id);
+const user = await prisma.user.findUnique({
+  where: { id: decoded.id },
+  select: { status: true },
+});
+
+if (user?.status === "SUSPENDED") {
+  return NextResponse.json(
+    { error: "ACCOUNT_SUSPENDED" },
+    { status: 403 }
+  );
+}
 
     const skills = await prisma.skill.findMany({
       where: { userId, type: "OFFER" },

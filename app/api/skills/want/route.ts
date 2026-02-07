@@ -164,6 +164,19 @@ export async function POST(req: Request) {
       );
     }
 
+    const user = await prisma.user.findUnique({
+  where: { id: decoded.id },
+  select: { status: true },
+});
+
+if (user?.status === "SUSPENDED") {
+  return NextResponse.json(
+    { error: "ACCOUNT_SUSPENDED" },
+    { status: 403 }
+  );
+}
+
+
     const { skill, learnGoal } = await req.json();
 
     if (!skill || !skill.trim()) {

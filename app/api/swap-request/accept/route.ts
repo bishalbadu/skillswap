@@ -1,26 +1,23 @@
 // import { NextResponse } from "next/server";
 // import prisma from "@/lib/prisma";
-// import jwt from "jsonwebtoken";
+// import { getUserFromRequest } from "@/lib/auth";
 
 // export async function PUT(req: Request) {
 //   try {
-//     // 🔐 AUTH
-//     const cookie = req.headers.get("cookie") || "";
-//     const token = cookie.match(/token=([^;]+)/)?.[1];
+//     /* ================= AUTH ================= */
+//     const user = await getUserFromRequest();
 
-//     if (!token) {
-//       return NextResponse.json({ error: "NOT_AUTHENTICATED" }, { status: 401 });
+//     if (!user) {
+//       return NextResponse.json(
+//         { error: "NOT_AUTHENTICATED" },
+//         { status: 401 }
+//       );
 //     }
 
-//     let decoded: any;
-//     try {
-//       decoded = jwt.verify(token, process.env.JWT_SECRET!);
-//     } catch {
-//       return NextResponse.json({ error: "INVALID_TOKEN" }, { status: 401 });
-//     }
+//     const receiverId = user.id;
 
+//     /* ================= BODY ================= */
 //     const { requestId } = await req.json();
-
 //     if (!requestId) {
 //       return NextResponse.json(
 //         { error: "REQUEST_ID_REQUIRED" },
@@ -28,21 +25,27 @@
 //       );
 //     }
 
-//     // 🔎 Load request + slot
+//     /* ================= LOAD REQUEST ================= */
 //     const request = await prisma.swapRequest.findUnique({
 //       where: { id: requestId },
 //       include: {
 //         slot: true,
+//         skill: true,
 //       },
 //     });
 
 //     if (!request) {
-//       return NextResponse.json({ error: "REQUEST_NOT_FOUND" }, { status: 404 });
+//       return NextResponse.json(
+//         { error: "REQUEST_NOT_FOUND" },
+//         { status: 404 }
+//       );
 //     }
 
-//     // 🔒 Only receiver can accept
-//     if (request.receiverId !== decoded.id) {
-//       return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 403 });
+//     if (request.receiverId !== receiverId) {
+//       return NextResponse.json(
+//         { error: "UNAUTHORIZED" },
+//         { status: 403 }
+//       );
 //     }
 
 //     if (request.status !== "PENDING") {
@@ -52,96 +55,135 @@
 //       );
 //     }
 
-//     // ❗ Slot MUST exist
-//     if (!request.slot || !request.slotId) {
+//     if (!request.slot || request.slot.isBooked) {
 //       return NextResponse.json(
-//         { error: "SLOT_NOT_FOUND" },
-//         { status: 400 }
-//       );
-//     }
-
-//     // 🚫 Slot already booked
-//     if (request.slot.isBooked) {
-//       return NextResponse.json(
-//         { error: "SLOT_ALREADY_BOOKED" },
+//         { error: "SLOT_NOT_AVAILABLE" },
 //         { status: 409 }
 //       );
 //     }
 
-//     // ✅ Accept this request
-//     const acceptedRequest = await prisma.swapRequest.update({
-//       where: { id: requestId },
-//       data: { status: "ACCEPTED" },
+//     /* ================= TRANSACTION ================= */
+//     const accepted = await prisma.$transaction(async (tx) => {
+//       const res = await tx.swapRequest.update({
+//         where: { id: requestId },
+//         data: { status: "ACCEPTED" },
+//       });
+
+//       await tx.skillSlot.update({
+//         where: { id: request.slotId! },
+//         data: { isBooked: true },
+//       });
+
+//       await tx.swapRequest.updateMany({
+//         where: {
+//           slotId: request.slotId!,
+//           status: "PENDING",
+//           NOT: { id: requestId },
+//         },
+//         data: { status: "REJECTED" },
+//       });
+
+//       return res;
 //     });
 
-//     // 🔒 Book the slot
-//     await prisma.skillSlot.update({
-//       where: { id: request.slotId },
-//       data: { isBooked: true },
-//     });
-
-//     // ❌ Reject other pending requests for same slot
-//     await prisma.swapRequest.updateMany({
-//       where: {
-//         slotId: request.slotId,
-//         status: "PENDING",
-//         NOT: { id: requestId },
+//     /* ================= NOTIFICATION ================= */
+//     await prisma.notification.create({
+//       data: {
+//         userId: request.requesterId,
+//         type: "SWAP_ACCEPTED",
+//         title: "Swap Accepted",
+//         message: `${user.firstName} ${user.lastName} accepted your swap request for ${request.skill.name}`,
+//         link: "/dashboard/messages",
 //       },
-//       data: { status: "REJECTED" },
 //     });
 
-//     return NextResponse.json({
-//       success: true,
-//       request: acceptedRequest,
-//     });
+//     return NextResponse.json({ success: true, request: accepted });
+
 //   } catch (err) {
-//     console.error("ACCEPT SWAP REQUEST ERROR:", err);
-//     return NextResponse.json({ error: "SERVER_ERROR" }, { status: 500 });
+//     console.error("ACCEPT SWAP ERROR:", err);
+//     return NextResponse.json(
+//       { error: "SERVER_ERROR" },
+//       { status: 500 }
+//     );
 //   }
 // }
 
 
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import jwt from "jsonwebtoken";
+import { getUserFromRequest } from "@/lib/auth";
 
 export async function PUT(req: Request) {
   try {
-    const cookie = req.headers.get("cookie") || "";
-    const token = cookie.match(/token=([^;]+)/)?.[1];
-    if (!token) return NextResponse.json({ error: "NOT_AUTHENTICATED" }, { status: 401 });
+    /* ================= AUTH ================= */
+    const user = await getUserFromRequest();
 
-    let decoded: any;
-    try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET!);
-    } catch {
-      return NextResponse.json({ error: "INVALID_TOKEN" }, { status: 401 });
+    if (!user) {
+      return NextResponse.json(
+        { error: "NOT_AUTHENTICATED" },
+        { status: 401 }
+      );
     }
 
-    const { requestId } = await req.json();
-    if (!requestId) return NextResponse.json({ error: "REQUEST_ID_REQUIRED" }, { status: 400 });
+    // 🔴 ADD THIS BLOCK (EXACTLY HERE)
+    if (user.status === "SUSPENDED") {
+      return NextResponse.json(
+        { error: "ACCOUNT_SUSPENDED" },
+        { status: 403 }
+      );
+    }
 
+    const receiverId = user.id;
+
+    /* ================= BODY ================= */
+    const { requestId } = await req.json();
+    if (!requestId) {
+      return NextResponse.json(
+        { error: "REQUEST_ID_REQUIRED" },
+        { status: 400 }
+      );
+    }
+
+    /* ================= LOAD REQUEST ================= */
     const request = await prisma.swapRequest.findUnique({
       where: { id: requestId },
-      include: { slot: true },
+      include: {
+        slot: true,
+        skill: true,
+      },
     });
 
-    if (!request) return NextResponse.json({ error: "REQUEST_NOT_FOUND" }, { status: 404 });
-    if (request.receiverId !== decoded.id) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 403 });
-    if (request.status !== "PENDING") return NextResponse.json({ error: "REQUEST_ALREADY_PROCESSED" }, { status: 400 });
-
-    // ✅ Slot must exist for booking-based flow
-    if (!request.slotId || !request.slot) {
-      return NextResponse.json({ error: "SLOT_REQUIRED" }, { status: 400 });
+    if (!request) {
+      return NextResponse.json(
+        { error: "REQUEST_NOT_FOUND" },
+        { status: 404 }
+      );
     }
 
-    if (request.slot.isBooked) {
-      return NextResponse.json({ error: "SLOT_ALREADY_BOOKED" }, { status: 409 });
+    if (request.receiverId !== receiverId) {
+      return NextResponse.json(
+        { error: "UNAUTHORIZED" },
+        { status: 403 }
+      );
     }
 
-    // ✅ Do everything atomically
-    const result = await prisma.$transaction(async (tx) => {
-      const acceptedRequest = await tx.swapRequest.update({
+    if (request.status !== "PENDING") {
+      return NextResponse.json(
+        { error: "REQUEST_ALREADY_PROCESSED" },
+        { status: 400 }
+      );
+    }
+
+    if (!request.slot || request.slot.isBooked) {
+      return NextResponse.json(
+        { error: "SLOT_NOT_AVAILABLE" },
+        { status: 409 }
+      );
+    }
+
+    /* ================= TRANSACTION ================= */
+    const accepted = await prisma.$transaction(async (tx) => {
+      const res = await tx.swapRequest.update({
         where: { id: requestId },
         data: { status: "ACCEPTED" },
       });
@@ -160,12 +202,27 @@ export async function PUT(req: Request) {
         data: { status: "REJECTED" },
       });
 
-      return acceptedRequest;
+      return res;
     });
 
-    return NextResponse.json({ success: true, request: result });
+    /* ================= NOTIFICATION ================= */
+    await prisma.notification.create({
+      data: {
+        userId: request.requesterId,
+        type: "SWAP_ACCEPTED",
+        title: "Swap Accepted",
+        message: `${user.firstName} ${user.lastName} accepted your swap request for ${request.skill.name}`,
+        link: "/dashboard/messages",
+      },
+    });
+
+    return NextResponse.json({ success: true, request: accepted });
+
   } catch (err) {
-    console.error("ACCEPT SWAP REQUEST ERROR:", err);
-    return NextResponse.json({ error: "SERVER_ERROR" }, { status: 500 });
+    console.error("ACCEPT SWAP ERROR:", err);
+    return NextResponse.json(
+      { error: "SERVER_ERROR" },
+      { status: 500 }
+    );
   }
 }

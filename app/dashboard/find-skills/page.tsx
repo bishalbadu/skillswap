@@ -429,13 +429,18 @@ export default function FindSkillsPage() {
 
       {/* ================= MODAL ================= */}
       {selectedSkill && selectedSlot && (
-        <RequestSwapModal
-          open={open}
-          skill={selectedSkill}
-          slot={selectedSlot}
-          user={selectedSkill.user}
-          onClose={() => setOpen(false)}
-        />
+       <RequestSwapModal
+  open={open}
+  skill={selectedSkill}
+  slot={selectedSlot}
+  user={selectedSkill.user}
+  onClose={() => setOpen(false)}
+  onSuccess={() => {
+    // ✅ optional: refresh skills or mark requested
+    setOpen(false);
+  }}
+/>
+
       )}
     </div>
   );

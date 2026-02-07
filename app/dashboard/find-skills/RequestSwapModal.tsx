@@ -103,12 +103,14 @@ export default function RequestSwapModal({
   slot,
   user, 
   onClose,
+  onSuccess,
 }: {
   open: boolean;
   skill: any;
   slot: any;
   user: any; 
   onClose: () => void;
+   onSuccess: () => void;
 }) {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
@@ -142,9 +144,10 @@ export default function RequestSwapModal({
       return;
     }
 
-    alert("Swap request sent!");
-    setMessage("");
-    onClose();
+   onSuccess();        
+setMessage("");
+onClose();
+
   }
 
   return (

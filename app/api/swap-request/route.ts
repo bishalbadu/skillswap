@@ -1,5 +1,3 @@
-// // any can sent request even if not in want list
-
 // import { NextResponse } from "next/server";
 // import prisma from "@/lib/prisma";
 // import jwt from "jsonwebtoken";
@@ -19,6 +17,7 @@
 //  */
 // export async function POST(req: Request) {
 //   try {
+//     /* ================= AUTH ================= */
 //     const cookie = req.headers.get("cookie") || "";
 //     const token = cookie.match(/token=([^;]+)/)?.[1];
 
@@ -39,6 +38,7 @@
 //       );
 //     }
 
+//     /* ================= BODY ================= */
 //     const { skillId, slotId, message } = await req.json();
 
 //     if (!skillId || !slotId) {
@@ -48,7 +48,7 @@
 //       );
 //     }
 
-//     // 🔎 Load slot
+//     /* ================= LOAD SLOT ================= */
 //     const slot = await prisma.skillSlot.findUnique({
 //       where: { id: slotId },
 //       include: { skill: true },
@@ -61,6 +61,7 @@
 //       );
 //     }
 
+//     /* ================= CANNOT REQUEST OWN ================= */
 //     if (slot.skill.userId === decoded.id) {
 //       return NextResponse.json(
 //         { error: "CANNOT_REQUEST_OWN_SKILL" },
@@ -68,7 +69,28 @@
 //       );
 //     }
 
-//     // 🚫 Prevent duplicate pending request
+//     /* =====================================================
+//        ⭐ NEW RULE — MUST EXIST IN WANT SKILLS
+//     ===================================================== */
+//     const wantSkill = await prisma.skill.findFirst({
+//       where: {
+//         userId: decoded.id,
+//         type: "WANT",
+//         name: {
+//           contains: slot.skill.name,
+//           mode: "insensitive",
+//         },
+//       },
+//     });
+
+//     if (!wantSkill) {
+//       return NextResponse.json(
+//         { error: "SKILL_NOT_IN_WANT_LIST" },
+//         { status: 403 }
+//       );
+//     }
+
+//     /* ================= PREVENT DUPLICATE ================= */
 //     const existing = await prisma.swapRequest.findFirst({
 //       where: {
 //         requesterId: decoded.id,
@@ -84,6 +106,7 @@
 //       );
 //     }
 
+//     /* ================= CREATE REQUEST ================= */
 //     const created = await prisma.swapRequest.create({
 //       data: {
 //         requesterId: decoded.id,
@@ -94,16 +117,20 @@
 //       },
 //     });
 
-//     return NextResponse.json({ success: true, request: created });
+//     return NextResponse.json({
+//       success: true,
+//       request: created,
+//     });
+
 //   } catch (err) {
 //     console.error("CREATE SWAP REQUEST ERROR:", err);
+
 //     return NextResponse.json(
 //       { error: "SERVER_ERROR" },
 //       { status: 500 }
 //     );
 //   }
 // }
-
 
 
 import { NextResponse } from "next/server";
@@ -121,7 +148,7 @@ export async function GET() {
 }
 
 /**
- * ✅ CREATE SWAP REQUEST
+ * ✅ CREATE SWAP REQUEST + NOTIFICATION
  */
 export async function POST(req: Request) {
   try {
@@ -145,6 +172,19 @@ export async function POST(req: Request) {
         { status: 401 }
       );
     }
+const user = await prisma.user.findUnique({
+  where: { id: decoded.id },
+  select: { status: true },
+});
+
+if (!user || user.status === "SUSPENDED") {
+  return NextResponse.json(
+    { error: "ACCOUNT_SUSPENDED" },
+    { status: 403 }
+  );
+}
+
+    const requesterId = Number(decoded.id);
 
     /* ================= BODY ================= */
     const { skillId, slotId, message } = await req.json();
@@ -159,7 +199,13 @@ export async function POST(req: Request) {
     /* ================= LOAD SLOT ================= */
     const slot = await prisma.skillSlot.findUnique({
       where: { id: slotId },
-      include: { skill: true },
+      include: {
+        skill: {
+          include: {
+            user: true, // receiver
+          },
+        },
+      },
     });
 
     if (!slot || slot.isBooked) {
@@ -169,20 +215,18 @@ export async function POST(req: Request) {
       );
     }
 
-    /* ================= CANNOT REQUEST OWN ================= */
-    if (slot.skill.userId === decoded.id) {
+    /* ================= CANNOT REQUEST OWN SKILL ================= */
+    if (slot.skill.userId === requesterId) {
       return NextResponse.json(
         { error: "CANNOT_REQUEST_OWN_SKILL" },
         { status: 400 }
       );
     }
 
-    /* =====================================================
-       ⭐ NEW RULE — MUST EXIST IN WANT SKILLS
-    ===================================================== */
+    /* ================= WANT SKILL RULE ================= */
     const wantSkill = await prisma.skill.findFirst({
       where: {
-        userId: decoded.id,
+        userId: requesterId,
         type: "WANT",
         name: {
           contains: slot.skill.name,
@@ -201,7 +245,7 @@ export async function POST(req: Request) {
     /* ================= PREVENT DUPLICATE ================= */
     const existing = await prisma.swapRequest.findFirst({
       where: {
-        requesterId: decoded.id,
+        requesterId,
         slotId,
         status: "PENDING",
       },
@@ -217,7 +261,7 @@ export async function POST(req: Request) {
     /* ================= CREATE REQUEST ================= */
     const created = await prisma.swapRequest.create({
       data: {
-        requesterId: decoded.id,
+        requesterId,
         receiverId: slot.skill.userId,
         skillId: slot.skillId,
         slotId,
@@ -225,6 +269,23 @@ export async function POST(req: Request) {
       },
     });
 
+    /* ================= CREATE NOTIFICATION ================= */
+    const requester = await prisma.user.findUnique({
+      where: { id: requesterId },
+      select: { firstName: true, lastName: true },
+    });
+
+    await prisma.notification.create({
+      data: {
+        userId: slot.skill.userId, // receiver
+        type: "SWAP_REQUESTED",
+        title: "New Swap Request",
+        message: `${requester?.firstName} ${requester?.lastName} sent you a request to swap for ${slot.skill.name}`,
+        link: "/dashboard/messages",
+      },
+    });
+
+    /* ================= RESPONSE ================= */
     return NextResponse.json({
       success: true,
       request: created,
@@ -232,7 +293,6 @@ export async function POST(req: Request) {
 
   } catch (err) {
     console.error("CREATE SWAP REQUEST ERROR:", err);
-
     return NextResponse.json(
       { error: "SERVER_ERROR" },
       { status: 500 }
