@@ -8,27 +8,49 @@ export async function POST(req: Request) {
     const token = cookie.match(/token=([^;]+)/)?.[1];
 
     if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json(
+        { error: "NOT_AUTHENTICATED" },
+        { status: 401 }
+      );
     }
 
     const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
-    const userId = decoded.id;
 
-    const { firstName, lastName, bio, avatar } = await req.json();
+    let body: any = {};
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json(
+        { error: "INVALID_JSON" },
+        { status: 400 }
+      );
+    }
+
+    const data: any = {};
+
+    if (typeof body.firstName === "string") data.firstName = body.firstName;
+    if (typeof body.lastName === "string") data.lastName = body.lastName;
+    if (typeof body.avatar === "string") data.avatar = body.avatar;
+    if (typeof body.bio === "string") data.bio = body.bio;
+
+    if (Object.keys(data).length === 0) {
+      return NextResponse.json(
+        { error: "NO_FIELDS_TO_UPDATE" },
+        { status: 400 }
+      );
+    }
 
     const updated = await prisma.user.update({
-      where: { id: userId },
-      data: {
-        firstName,
-        lastName,
-        bio,
-        avatar,
-      },
+      where: { id: decoded.id },
+      data,
     });
 
     return NextResponse.json({ success: true, user: updated });
   } catch (err) {
     console.error("PROFILE UPDATE ERROR:", err);
-    return NextResponse.json({ error: "Failed to update profile" }, { status: 500 });
+    return NextResponse.json(
+      { error: "SERVER_ERROR" },
+      { status: 500 }
+    );
   }
 }
