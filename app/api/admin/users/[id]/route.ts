@@ -84,6 +84,8 @@
 //   return NextResponse.json({ user });
 // }
 
+
+
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { verifyAdmin } from "@/lib/auth";
@@ -103,22 +105,25 @@ export async function GET(
   const user = await prisma.user.findUnique({
     where: { id: Number(params.id) },
     select: {
-      id: true,
-      firstName: true,
-      lastName: true,
-      email: true,
-      avatar: true,
-      bio: true,
-      membership: true,
-      status: true,
-      createdAt: true,
-      skills: {
-        select: {
-          name: true,
-          type: true,
-        },
-      },
+  id: true,
+  firstName: true,
+  lastName: true,
+  email: true,
+  avatar: true,
+  bio: true,
+  membership: true,
+  premiumUntil: true,
+  completedSwaps: true,
+  status: true,
+  createdAt: true,
+  skills: {
+    select: {
+      name: true,
+      type: true,
     },
+  },
+}
+
   });
 
   if (!user) {

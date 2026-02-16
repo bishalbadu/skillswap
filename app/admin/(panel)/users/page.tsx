@@ -357,7 +357,11 @@ export default function AdminUsersPage() {
               <th className="px-6 py-3 text-left">Membership</th>
               <th className="px-6 py-3 text-left">Status</th>
               <th className="px-6 py-3 text-left">Joined</th>
+              <th className="px-6 py-3 text-left">Premium Until</th>
+              <th className="px-6 py-3 text-left">Completed Swaps</th>
               <th className="px-6 py-3 text-right w-[240px]">Actions</th>
+              
+
             </tr>
           </thead>
 
@@ -401,6 +405,17 @@ export default function AdminUsersPage() {
                 <td className="px-6 py-4 text-gray-600">
                   {new Date(u.createdAt).toLocaleDateString()}
                 </td>
+              
+
+              <td className="px-6 py-4 text-gray-600">
+  {u.premiumUntil
+    ? new Date(u.premiumUntil).toLocaleDateString()
+    : "-"}
+</td>
+
+<td className="px-6 py-4 text-gray-600">
+  {u.completedSwaps}
+</td>
 
                 {/* ACTIONS */}
                 <td className="px-6 py-4 text-right">
