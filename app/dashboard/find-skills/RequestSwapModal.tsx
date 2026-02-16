@@ -93,6 +93,109 @@
 
 
 
+// "use client";
+
+// import { useState } from "react";
+
+// export default function RequestSwapModal({
+//   open,
+//   skill,
+//   slot,
+//   user, 
+//   onClose,
+//   onSuccess,
+// }: {
+//   open: boolean;
+//   skill: any;
+//   slot: any;
+//   user: any; 
+//   onClose: () => void;
+//    onSuccess: () => void;
+// }) {
+//   const [message, setMessage] = useState("");
+//   const [loading, setLoading] = useState(false);
+
+//   if (!open) return null;
+
+//   async function sendRequest() {
+//     setLoading(true);
+
+//     const res = await fetch("/api/swap-request", {
+//       method: "POST", // ✅ CORRECT
+//       headers: { "Content-Type": "application/json" },
+//       credentials: "include",
+//       body: JSON.stringify({
+//         skillId: skill.id,
+//         slotId: slot.id,
+//         message,
+//       }),
+//     });
+
+//     setLoading(false);
+
+//     // ✅ SAFETY CHECK
+//     if (!res.ok) {
+//       let error = "Failed to send request";
+//       try {
+//         const data = await res.json();
+//         error = data.error || error;
+//       } catch {}
+//       alert(error);
+//       return;
+//     }
+
+//    onSuccess();        
+// setMessage("");
+// onClose();
+
+//   }
+
+//   return (
+//     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+//       <div className="bg-white rounded-xl p-6 w-full max-w-md space-y-4">
+//         <h2 className="text-xl font-semibold">Request Swap</h2>
+
+//         <p className="text-sm text-gray-600">
+//           <b>Skill:</b> {skill.name}
+//           <br />
+//           <b>Slot:</b> {slot.day} {slot.timeFrom}–{slot.timeTo}
+//           <br />
+//           <b>To:</b> {user.firstName} {user.lastName}
+
+//         </p>
+
+//         <textarea
+//           className="w-full border rounded p-2 text-sm"
+//           placeholder="Optional message..."
+//           value={message}
+//           onChange={(e) => setMessage(e.target.value)}
+//         />
+
+//         <div className="flex justify-end gap-3 pt-2">
+//           <button
+//             onClick={onClose}
+//             className="px-4 py-2 border rounded"
+//           >
+//             Cancel
+//           </button>
+
+//           <button
+//             onClick={sendRequest}
+//             disabled={loading}
+//             className="px-4 py-2 bg-[#4a5e27] text-white rounded"
+//           >
+//             {loading ? "Sending..." : "Send Request"}
+//           </button>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
+
+
+// after premium
+
+
 "use client";
 
 import { useState } from "react";
@@ -101,16 +204,18 @@ export default function RequestSwapModal({
   open,
   skill,
   slot,
-  user, 
+  user,
   onClose,
   onSuccess,
+  onPremiumRequired, // 🔥 NEW PROP
 }: {
   open: boolean;
   skill: any;
   slot: any;
-  user: any; 
+  user: any;
   onClose: () => void;
-   onSuccess: () => void;
+  onSuccess: () => void;
+  onPremiumRequired?: () => void; // 🔥 OPTIONAL PROP
 }) {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
@@ -121,7 +226,7 @@ export default function RequestSwapModal({
     setLoading(true);
 
     const res = await fetch("/api/swap-request", {
-      method: "POST", // ✅ CORRECT
+      method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
       body: JSON.stringify({
@@ -133,7 +238,26 @@ export default function RequestSwapModal({
 
     setLoading(false);
 
-    // ✅ SAFETY CHECK
+    /* ================= HANDLE PREMIUM LIMIT ================= */
+    if (res.status === 403) {
+      try {
+        const data = await res.json();
+
+        if (data.error === "PREMIUM_REQUIRED") {
+          onClose(); // close this modal
+          onPremiumRequired?.(); // open premium modal
+          return;
+        }
+
+        if (data.error === "ACCOUNT_SUSPENDED") {
+          alert("Your account is suspended.");
+          return;
+        }
+
+      } catch {}
+    }
+
+    /* ================= GENERAL ERROR ================= */
     if (!res.ok) {
       let error = "Failed to send request";
       try {
@@ -144,10 +268,10 @@ export default function RequestSwapModal({
       return;
     }
 
-   onSuccess();        
-setMessage("");
-onClose();
-
+    /* ================= SUCCESS ================= */
+    onSuccess();
+    setMessage("");
+    onClose();
   }
 
   return (
@@ -161,7 +285,6 @@ onClose();
           <b>Slot:</b> {slot.day} {slot.timeFrom}–{slot.timeTo}
           <br />
           <b>To:</b> {user.firstName} {user.lastName}
-
         </p>
 
         <textarea
@@ -191,4 +314,3 @@ onClose();
     </div>
   );
 }
-

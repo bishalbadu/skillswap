@@ -14,6 +14,14 @@
 //       );
 //     }
 
+//     // 🔴 ADD THIS BLOCK (EXACTLY HERE)
+//     if (user.status === "SUSPENDED") {
+//       return NextResponse.json(
+//         { error: "ACCOUNT_SUSPENDED" },
+//         { status: 403 }
+//       );
+//     }
+
 //     const receiverId = user.id;
 
 //     /* ================= BODY ================= */
@@ -125,7 +133,6 @@ export async function PUT(req: Request) {
       );
     }
 
-    // 🔴 ADD THIS BLOCK (EXACTLY HERE)
     if (user.status === "SUSPENDED") {
       return NextResponse.json(
         { error: "ACCOUNT_SUSPENDED" },
@@ -137,6 +144,7 @@ export async function PUT(req: Request) {
 
     /* ================= BODY ================= */
     const { requestId } = await req.json();
+
     if (!requestId) {
       return NextResponse.json(
         { error: "REQUEST_ID_REQUIRED" },
@@ -183,26 +191,41 @@ export async function PUT(req: Request) {
 
     /* ================= TRANSACTION ================= */
     const accepted = await prisma.$transaction(async (tx) => {
-      const res = await tx.swapRequest.update({
+      // 1️⃣ Mark request as ACCEPTED
+      const updatedRequest = await tx.swapRequest.update({
         where: { id: requestId },
         data: { status: "ACCEPTED" },
       });
 
+      // 2️⃣ Mark slot as booked
       await tx.skillSlot.update({
-        where: { id: request.slotId! },
+        where: { id: request.slotId },
         data: { isBooked: true },
       });
 
+      // 3️⃣ Reject all other pending requests for same slot
       await tx.swapRequest.updateMany({
         where: {
-          slotId: request.slotId!,
+          slotId: request.slotId,
           status: "PENDING",
           NOT: { id: requestId },
         },
         data: { status: "REJECTED" },
       });
 
-      return res;
+      // 4️⃣ ✅ CREATE SESSION
+      await tx.session.create({
+        data: {
+          swapRequestId: request.id,
+          skillId: request.skillId,
+          slotId: request.slotId,
+          hostId: request.receiverId,     // skill owner
+          guestId: request.requesterId,   // requester
+          status: "UPCOMING",
+        },
+      });
+
+      return updatedRequest;
     });
 
     /* ================= NOTIFICATION ================= */
@@ -212,14 +235,18 @@ export async function PUT(req: Request) {
         type: "SWAP_ACCEPTED",
         title: "Swap Accepted",
         message: `${user.firstName} ${user.lastName} accepted your swap request for ${request.skill.name}`,
-        link: "/dashboard/messages",
+        link: "/dashboard/skillmeet",  // better redirect now
       },
     });
 
-    return NextResponse.json({ success: true, request: accepted });
+    return NextResponse.json({
+      success: true,
+      request: accepted,
+    });
 
   } catch (err) {
     console.error("ACCEPT SWAP ERROR:", err);
+
     return NextResponse.json(
       { error: "SERVER_ERROR" },
       { status: 500 }
