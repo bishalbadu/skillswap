@@ -306,33 +306,35 @@ import prisma from "@/lib/prisma";
 import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
 
+/* ================= NORMALIZER ================= */
+function normalize(str: string) {
+  return str.trim().toLowerCase().replace(/\s+/g, " ");
+}
 
-export async function GET(req: Request) {
+export async function GET() {
   try {
     /* ================= AUTH ================= */
-    /* ================= AUTH ================= */
-const cookieStore = await cookies();
-const token = cookieStore.get("token")?.value;
+    const cookieStore = await cookies();
+    const token = cookieStore.get("token")?.value;
 
-if (!token) {
-  return NextResponse.json({ skills: [], me: null });
-}
+    if (!token) {
+      return NextResponse.json({ skills: [], me: null });
+    }
 
-let decoded: { id: number };
+    let decoded: { id: number };
 
-try {
-  decoded = jwt.verify(
-    token,
-    process.env.JWT_SECRET!
-  ) as { id: number };
-} catch {
-  return NextResponse.json({ skills: [], me: null });
-}
+    try {
+      decoded = jwt.verify(
+        token,
+        process.env.JWT_SECRET!
+      ) as { id: number };
+    } catch {
+      return NextResponse.json({ skills: [], me: null });
+    }
 
-if (!decoded?.id) {
-  return NextResponse.json({ skills: [], me: null });
-}
-
+    if (!decoded?.id) {
+      return NextResponse.json({ skills: [], me: null });
+    }
 
     /* ================= LOAD CURRENT USER ================= */
     const me = await prisma.user.findUnique({
@@ -349,37 +351,25 @@ if (!decoded?.id) {
     }
 
     const wantSkills = me.skills
-      .map((s) => s.name.trim().toLowerCase())
+      .map((s) => normalize(s.name))
       .filter(Boolean);
 
     if (wantSkills.length === 0) {
       return NextResponse.json({ skills: [], me });
     }
 
-    /* ================= FIND MATCHED OFFER SKILLS ================= */
-    const matchedSkills = await prisma.skill.findMany({
+    /* ================= FETCH ALL OFFER SKILLS (NO OR FILTER) ================= */
+    const allOfferSkills = await prisma.skill.findMany({
       where: {
         type: "OFFER",
         status: "APPROVED",
         publicListing: true,
         userId: { not: me.id },
-
-        user: {
-          status: "ACTIVE",
-        },
-
+        user: { status: "ACTIVE" },
         slots: {
           some: { isBooked: false },
         },
-
-        OR: wantSkills.map((skill) => ({
-          name: {
-            contains: skill,
-            mode: "insensitive",
-          },
-        })),
       },
-
       include: {
         user: {
           select: {
@@ -389,7 +379,6 @@ if (!decoded?.id) {
             avatar: true,
           },
         },
-
         slots: {
           where: { isBooked: false },
           orderBy: { date: "asc" },
@@ -402,8 +391,18 @@ if (!decoded?.id) {
           },
         },
       },
-
       orderBy: { createdAt: "desc" },
+    });
+
+    /* ================= FILTER IN JS ================= */
+    const filteredSkills = allOfferSkills.filter((s) => {
+      const offeredName = normalize(s.name);
+
+      return wantSkills.some(
+        (want) =>
+          offeredName.includes(want) ||
+          want.includes(offeredName)
+      );
     });
 
     /* ================= GET MY PENDING REQUESTS ================= */
@@ -412,48 +411,44 @@ if (!decoded?.id) {
         requesterId: me.id,
         status: "PENDING",
       },
-      select: {
-        skillId: true,
-      },
+      select: { skillId: true },
     });
 
     const requestedSkillIds = new Set(
       myPendingRequests.map((r) => r.skillId)
     );
 
-    /* ================= COLLECT UNIQUE USER IDS ================= */
+    /* ================= COLLECT USER IDS ================= */
     const userIds = [
-      ...new Set(matchedSkills.map((s) => s.user.id)),
+      ...new Set(filteredSkills.map((s) => s.user.id)),
     ];
 
-    /* ================= GET ALL REVIEWS FOR THESE USERS ================= */
-    /* ================= GET REVIEWS SAFELY ================= */
+    /* ================= GET REVIEWS ================= */
+    let ratingMap: Record<number, { sum: number; count: number }> = {};
 
-let ratingMap: Record<number, { sum: number; count: number }> = {};
+    if (userIds.length > 0) {
+      const reviews = await prisma.review.findMany({
+        where: {
+          revieweeId: { in: userIds },
+        },
+        select: {
+          revieweeId: true,
+          rating: true,
+        },
+      });
 
-if (userIds.length > 0) {
-  const reviews = await prisma.review.findMany({
-    where: {
-      revieweeId: { in: userIds },
-    },
-    select: {
-      revieweeId: true,
-      rating: true,
-    },
-  });
+      for (const r of reviews) {
+        if (!ratingMap[r.revieweeId]) {
+          ratingMap[r.revieweeId] = { sum: 0, count: 0 };
+        }
 
-  for (const r of reviews) {
-    if (!ratingMap[r.revieweeId]) {
-      ratingMap[r.revieweeId] = { sum: 0, count: 0 };
+        ratingMap[r.revieweeId].sum += r.rating;
+        ratingMap[r.revieweeId].count += 1;
+      }
     }
 
-    ratingMap[r.revieweeId].sum += r.rating;
-    ratingMap[r.revieweeId].count += 1;
-  }
-}
-
     /* ================= FORMAT RESPONSE ================= */
-    const formatted = matchedSkills.map((s) => {
+    const formatted = filteredSkills.map((s) => {
       const userRatingData = ratingMap[s.user.id];
 
       const rating = userRatingData
@@ -464,33 +459,27 @@ if (userIds.length > 0) {
         ? userRatingData.count
         : 0;
 
-      const canRequest = wantSkills.some((w) =>
-        s.name.toLowerCase().includes(w)
-      );
+      const canRequest = wantSkills.some((want) => {
+        const offeredName = normalize(s.name);
+        return (
+          offeredName.includes(want) ||
+          want.includes(offeredName)
+        );
+      });
 
       const alreadyRequested = requestedSkillIds.has(s.id);
 
       return {
         id: s.id,
         name: s.name,
-
         level: s.level ?? "Not specified",
         description: s.description ?? "No description provided",
         platform: s.platform ?? "Flexible",
         sessionLength: s.sessionLength ?? null,
-
         rating: Number(rating.toFixed(1)),
         reviewsCount,
-
         slots: s.slots,
-
-        user: {
-          id: s.user.id,
-          firstName: s.user.firstName,
-          lastName: s.user.lastName,
-          avatar: s.user.avatar,
-        },
-
+        user: s.user,
         canRequest,
         alreadyRequested,
       };
@@ -506,7 +495,6 @@ if (userIds.length > 0) {
 
   } catch (err) {
     console.error("FIND SKILLS API ERROR:", err);
-
     return NextResponse.json(
       { skills: [], me: null },
       { status: 500 }

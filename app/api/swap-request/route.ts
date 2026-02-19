@@ -305,14 +305,10 @@
 // }
 
 
-
-// after premium
-
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import jwt from "jsonwebtoken";
 import { AccountStatus } from "@prisma/client";
-
 
 /**
  * 🔍 SAFETY: Handle accidental GET calls
@@ -349,51 +345,56 @@ export async function POST(req: Request) {
         { status: 401 }
       );
     }
-const user = await prisma.user.findUnique({
-  where: { id: decoded.id },
-  select: {
-    status: true,
-    completedSwaps: true,
-    premiumUntil: true,
-  },
-});
-
-if (!user || user.status === "SUSPENDED") {
-  return NextResponse.json(
-    { error: "ACCOUNT_SUSPENDED" },
-    { status: 403 }
-  );
-}
-
-/* ================= PREMIUM GUARD ================= */
-const isPremium =
-  user.premiumUntil && new Date(user.premiumUntil) > new Date();
-
-if (!isPremium && user.completedSwaps >= 10) {
-  return NextResponse.json(
-    { error: "PREMIUM_REQUIRED" },
-    { status: 403 }
-  );
-}
-
-
-if (!user) {
-  return NextResponse.json(
-    { error: "ACCOUNT_SUSPENDED" },
-    { status: 403 }
-  );
-}
-
-if (user.status !== AccountStatus.ACTIVE) {
-  return NextResponse.json(
-    { error: "ACCOUNT_SUSPENDED" },
-    { status: 403 }
-  );
-}
-
-
 
     const requesterId = Number(decoded.id);
+
+    /* ================= LOAD USER ================= */
+    const user = await prisma.user.findUnique({
+      where: { id: requesterId },
+      select: {
+        status: true,
+        membership: true,
+        premiumUntil: true,
+      },
+    });
+
+    if (!user || user.status !== AccountStatus.ACTIVE) {
+      return NextResponse.json(
+        { error: "ACCOUNT_SUSPENDED" },
+        { status: 403 }
+      );
+    }
+
+    /* ================= PREMIUM GUARD ================= */
+
+    const FREE_LIMIT = 5;
+
+    const realCompletedCount = await prisma.session.count({
+      where: {
+        status: "COMPLETED",
+        OR: [
+          { hostId: requesterId },
+          { guestId: requesterId },
+        ],
+      },
+    });
+
+    let isPremium = false;
+
+    if (
+      user.membership === "PREMIUM" &&
+      user.premiumUntil &&
+      new Date(user.premiumUntil).getTime() > Date.now()
+    ) {
+      isPremium = true;
+    }
+
+    if (!isPremium && realCompletedCount >= FREE_LIMIT) {
+      return NextResponse.json(
+        { error: "PREMIUM_REQUIRED" },
+        { status: 403 }
+      );
+    }
 
     /* ================= BODY ================= */
     const { skillId, slotId, message } = await req.json();
@@ -411,7 +412,7 @@ if (user.status !== AccountStatus.ACTIVE) {
       include: {
         skill: {
           include: {
-            user: true, // receiver
+            user: true,
           },
         },
       },
@@ -433,18 +434,30 @@ if (user.status !== AccountStatus.ACTIVE) {
     }
 
     /* ================= WANT SKILL RULE ================= */
-    const wantSkill = await prisma.skill.findFirst({
+
+    const normalize = (str: string) =>
+      str.trim().toLowerCase().replace(/\s+/g, " ");
+
+    const offeredName = normalize(slot.skill.name);
+
+    const wantSkills = await prisma.skill.findMany({
       where: {
         userId: requesterId,
         type: "WANT",
-        name: {
-          contains: slot.skill.name,
-          mode: "insensitive",
-        },
       },
+      select: { name: true },
     });
 
-    if (!wantSkill) {
+    const hasMatch = wantSkills.some((w) => {
+      const wantName = normalize(w.name);
+
+      return (
+        offeredName.includes(wantName) ||
+        wantName.includes(offeredName)
+      );
+    });
+
+    if (!hasMatch) {
       return NextResponse.json(
         { error: "SKILL_NOT_IN_WANT_LIST" },
         { status: 403 }
@@ -486,7 +499,7 @@ if (user.status !== AccountStatus.ACTIVE) {
 
     await prisma.notification.create({
       data: {
-        userId: slot.skill.userId, // receiver
+        userId: slot.skill.userId,
         type: "SWAP_REQUESTED",
         title: "New Swap Request",
         message: `${requester?.firstName} ${requester?.lastName} sent you a request to swap for ${slot.skill.name}`,
