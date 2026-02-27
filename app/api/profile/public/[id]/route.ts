@@ -136,10 +136,13 @@ import jwt from "jsonwebtoken";
 
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
-) {
+  context: { params: Promise<{ id: string }> }
+)
+ {
   try {
-    const userId = Number(params.id);
+   const { id } = await context.params; // ✅ FIX
+const userId = Number(id);
+
 
     if (isNaN(userId)) {
       return NextResponse.json(

@@ -161,6 +161,8 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import RequestSwapModal from "../../find-skills/RequestSwapModal";
 import ReportUserModal from "@/components/ReportUserModal";
+import PremiumModal from "@/components/PremiumModal";
+
 
 /* ⭐ Star Rating */
 function StarRating({ rating }: { rating: number }) {
@@ -186,7 +188,9 @@ export default function PublicProfilePage() {
   
   const [optimisticRequested, setOptimisticRequested] = useState<Record<number, boolean>>({});
 
-const [reportOpen, setReportOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [premiumOpen, setPremiumOpen] = useState(false);
+
 
   useEffect(() => {
     loadProfile();
@@ -226,9 +230,18 @@ const [reportOpen, setReportOpen] = useState(false);
   )}
 
   <div>
-    <h1 className="text-2xl font-bold">
-      {user.firstName} {user.lastName}
-    </h1>
+    <div className="flex items-center gap-3">
+  <h1 className="text-2xl font-bold">
+    {user.firstName} {user.lastName}
+  </h1>
+
+  {user.membership === "PREMIUM" && (
+    <span className="bg-yellow-500 text-white text-xs px-2 py-1 rounded">
+      ⭐ PREMIUM
+    </span>
+  )}
+</div>
+
 
     <div className="flex items-center gap-2 mt-1">
       <StarRating rating={user.rating} />
@@ -379,9 +392,18 @@ const [reportOpen, setReportOpen] = useState(false);
         [selectedSkill.id]: true,
       }));
     }}
+    onPremiumRequired={() => {
+      setOpen(false);       // close request modal
+      setPremiumOpen(true); // open premium modal
+    }}
   />
 )}
 
+{/* ================= PREMIUM MODAL ================= */}
+<PremiumModal
+  open={premiumOpen}
+  onClose={() => setPremiumOpen(false)}
+/>
 {/* ================= REPORT USER MODAL ================= */}
 <ReportUserModal
   open={reportOpen}
