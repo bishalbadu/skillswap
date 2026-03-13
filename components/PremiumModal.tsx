@@ -20,7 +20,7 @@ export default function PremiumModal({
 
     const data = await res.json();
 
-    // 🛑 SAFETY CHECK
+    //SAFETY CHECK
     if (!res.ok || !data?.esewaUrl || !data?.payload) {
       console.error("Invalid eSewa response:", data);
       alert("Payment initiation failed. Please try again.");
@@ -66,14 +66,14 @@ export default function PremiumModal({
           onClick={() => upgrade("MONTH_1")}
           className="w-full bg-[#2c3a21] text-white py-2 rounded"
         >
-          Unlock Unlimited Swaps (1 Month - Rs 2500)
+          Unlock Unlimited Swaps (1 Month - Rs 2000)
         </button>
 
         <button
           onClick={() => upgrade("MONTH_6")}
           className="w-full bg-yellow-600 text-white py-2 rounded"
         >
-          Unlock 6 Months (Rs 5500)
+          Unlock 6 Months (Rs 6000)
         </button>
 
         <button
