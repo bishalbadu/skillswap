@@ -175,7 +175,8 @@ function StarRating({ rating }: { rating: number }) {
 }
 
 export default function PublicProfilePage() {
-  const { id } = useParams();
+const params = useParams<{ id: string }>();
+const id = params?.id;
 
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
@@ -299,11 +300,11 @@ export default function PublicProfilePage() {
                 <div className="mt-4 space-y-2">
                   <p className="text-sm font-medium">Available slots:</p>
 
-                  {skill.slots.length === 0 && (
-                    <span className="text-xs text-gray-400">
-                      No slots available
-                    </span>
-                  )}
+                 {skill.slots.length === 0 && (
+  <span className="text-xs text-gray-400">
+    No upcoming slots
+  </span>
+)}
 
                   <div className="flex flex-wrap gap-2">
 

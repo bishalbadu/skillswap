@@ -1,5 +1,7 @@
 "use client";
 
+import { motion } from "framer-motion";
+
 export default function WhyChoose() {
   const features = [
     {
@@ -17,20 +19,53 @@ export default function WhyChoose() {
   ];
 
   return (
-    <section className="bg-white py-16 text-center">
-      <h3 className="text-3xl font-semibold mb-8 text-[#556B2F]">
-        Why Choose Skill Swap?
-      </h3>
-      <div className="flex flex-wrap justify-center gap-6 px-8">
-        {features.map((item, i) => (
-          <div
-            key={i}
-            className="bg-[#B8860B] text-white rounded-lg shadow-md p-6 w-[280px] md:w-[300px] hover:scale-105 transform transition"
-          >
-            <h4 className="text-lg font-semibold mb-2">{item.title}</h4>
-            <p className="text-sm">{item.desc}</p>
-          </div>
-        ))}
+    <section className="relative bg-[#F8F9F4] py-24 px-6">
+
+      {/* ✨ subtle background depth */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(184,134,11,0.08),transparent_70%)]" />
+
+      {/* 🧠 CONTENT */}
+      <div className="relative max-w-7xl mx-auto text-center">
+
+        {/* TITLE */}
+        <motion.h3
+          className="text-4xl md:text-5xl font-bold text-[#556B2F] mb-16"
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+        >
+          Why Choose SkillSwap?
+        </motion.h3>
+
+        {/* CARDS */}
+        <div className="grid md:grid-cols-3 gap-10">
+
+          {features.map((item, i) => (
+            <motion.div
+              key={i}
+              className="bg-white rounded-2xl shadow-lg p-10 text-left border border-[#556B2F]/10 hover:shadow-2xl transition duration-300"
+              initial={{ opacity: 0, y: 60 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.2 }}
+            >
+              {/* NUMBER */}
+              <div className="text-3xl font-bold text-[#B8860B] mb-4">
+                0{i + 1}
+              </div>
+
+              {/* TITLE */}
+              <h4 className="text-xl font-semibold text-[#556B2F] mb-3">
+                {item.title}
+              </h4>
+
+              {/* DESC */}
+              <p className="text-gray-600 leading-relaxed">
+                {item.desc}
+              </p>
+            </motion.div>
+          ))}
+        </div>
       </div>
     </section>
   );

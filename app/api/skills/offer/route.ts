@@ -5,57 +5,72 @@
 
 // const JWT_SECRET = process.env.JWT_SECRET!;
 
+// /* ============================================================
+//    AUTH HELPER
+// ============================================================ */
+
+// async function getUserId() {
+//   const cookieStore = await cookies();
+//   const token = cookieStore.get("token")?.value;
+
+//   if (!token) return null;
+
+//   try {
+//     const decoded: any = jwt.verify(token, JWT_SECRET);
+//     return Number(decoded?.id);
+//   } catch {
+//     return null;
+//   }
+// }
+
+// /* ============================================================
+//    POST → CREATE SKILL OR ADD SLOT
+// ============================================================ */
+
 // export async function POST(req: Request) {
 //   try {
-//     /* ================= AUTH ================= */
+//     const userId = await getUserId();
 
-//     const cookieStore = await cookies();
-//     const token = cookieStore.get("token")?.value;
-
-//     if (!token) {
-//       return NextResponse.json({ error: "NOT_LOGGED_IN" }, { status: 401 });
+//     if (!userId) {
+//       return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
 //     }
-
-//     let decoded: any;
-//     try {
-//       decoded = jwt.verify(token, JWT_SECRET);
-//     } catch {
-//       return NextResponse.json({ error: "TOKEN_INVALID" }, { status: 401 });
-//     }
-
-//     const userId = Number(decoded?.id);
-
-//     if (!Number.isInteger(userId)) {
-//       return NextResponse.json({ error: "INVALID_TOKEN" }, { status: 401 });
-//     }
-
-//     /* ================= BODY ================= */
 
 //     const {
-//       teachSkill,
-//       teachLevel,
-//       teachDesc,
-//       sessionLength,
-//       selectedDate, // ⭐ new
-//       fromTime,
-//       toTime,
-//       platform,
-//       publicListing,
-//     } = await req.json();
+//   teachSkill,
+//   teachLevel,
+//   teachDesc,
+//   sessionLength,
+//   selectedDate,
+//   fromTime,
+//   toTime,
+//   platform,
+//   publicListing,
+//   editId,
+//   proofs
+// } = await req.json();
 
 //     /* ================= VALIDATION ================= */
 
 //     if (!teachSkill?.trim()) {
-//       return NextResponse.json({ error: "SKILL_NAME_REQUIRED" }, { status: 400 });
+//       return NextResponse.json(
+//         { error: "SKILL_NAME_REQUIRED" },
+//         { status: 400 }
+//       );
 //     }
 
-//     if (!selectedDate) {
-//       return NextResponse.json({ error: "DATE_REQUIRED" }, { status: 400 });
+//     if (!selectedDate || !fromTime || !toTime) {
+//       return NextResponse.json(
+//         { error: "DATE_TIME_REQUIRED" },
+//         { status: 400 }
+//       );
 //     }
 
-//     if (!fromTime || !toTime) {
-//       return NextResponse.json({ error: "TIME_REQUIRED" }, { status: 400 });
-//     }
+// if (!proofs || proofs.length === 0) {
+//   return NextResponse.json(
+//     { error: "CERTIFICATION_REQUIRED" },
+//     { status: 400 }
+//   );
+// }
 
 //     const session = Number(sessionLength);
 
@@ -64,7 +79,6 @@
 
 //     const diffMinutes = (end.getTime() - start.getTime()) / 60000;
 
-//     // ✅ EXACT match only
 //     if (diffMinutes !== session) {
 //       return NextResponse.json(
 //         { error: "TIME_MUST_EQUAL_SESSION_LENGTH" },
@@ -72,25 +86,109 @@
 //       );
 //     }
 
-//     /* ================= CREATE SKILL ================= */
+//     /* ================= PREVENT PAST SLOT ================= */
 
-//     const skill = await prisma.skill.create({
-//       data: {
-//         name: teachSkill.trim(),
-//         type: "OFFER",
-//         level: teachLevel ?? null,
-//         description: teachDesc ?? null,
-//         platform: platform ?? null,
-//         publicListing: publicListing ?? true,
-//         sessionLength: session,
-//         userId,
-//         status: "PENDING",
+//     const now = new Date();
+//     const dateObj = new Date(selectedDate);
+
+//     const slotEnd = new Date(selectedDate);
+//     const [h, m] = toTime.split(":").map(Number);
+//     slotEnd.setHours(h, m, 0, 0);
+
+//     if (slotEnd <= now) {
+//       return NextResponse.json(
+//         { error: "CANNOT_CREATE_PAST_SLOT" },
+//         { status: 400 }
+//       );
+//     }
+
+//     /* ============================================================
+//        FIND OR CREATE SKILL
+//     ============================================================ */
+
+//     let skill;
+
+//     if (editId) {
+//       // 🔥 EDIT MODE → Only add slot
+//       skill = await prisma.skill.findFirst({
+//         where: {
+//           id: Number(editId),
+//           userId,
+//           type: "OFFER",
+//         },
+//       });
+
+//       if (!skill) {
+//         return NextResponse.json(
+//           { error: "SKILL_NOT_FOUND" },
+//           { status: 404 }
+//         );
+//       }
+
+//       // ✅ DO NOT TOUCH STATUS
+//     } else {
+//       // 🔥 CREATE MODE
+//       skill = await prisma.skill.findFirst({
+//         where: {
+//           userId,
+//           type: "OFFER",
+//           name: {
+//             equals: teachSkill.trim(),
+//             mode: "insensitive",
+//           },
+//         },
+//       });
+
+//       if (!skill) {
+//         // ✅ Only new skill is PENDING
+//       skill = await prisma.skill.create({
+//   data: {
+//     name: teachSkill.trim(),
+//     type: "OFFER",
+//     level: teachLevel ?? null,
+//     description: teachDesc ?? null,
+//     platform: platform ?? null,
+//     publicListing: publicListing ?? true,
+//     sessionLength: session,
+//     userId,
+//     status: "PENDING"
+//   },
+// });
+
+// // Save uploaded proofs
+// if (proofs && proofs.length > 0) {
+//   await prisma.skillProof.createMany({
+//     data: proofs.map((p: any) => ({
+//       skillId: skill.id,
+//       url: p.url,
+//       type: p.type
+//     }))
+//   });
+// }
+
+//     /* ============================================================
+//        PREVENT DUPLICATE SLOT
+//     ============================================================ */
+
+//     const existingSlot = await prisma.skillSlot.findFirst({
+//       where: {
+//         skillId: skill.id,
+//         date: dateObj,
+//         timeFrom: fromTime,
+//         timeTo: toTime,
 //       },
 //     });
 
-//     /* ================= CREATE SINGLE SLOT ================= */
+//     if (existingSlot) {
+//       return NextResponse.json(
+//         { error: "SLOT_ALREADY_EXISTS" },
+//         { status: 400 }
+//       );
+//     }
 
-//     const dateObj = new Date(selectedDate);
+//     /* ============================================================
+//        CREATE SLOT
+//     ============================================================ */
 
 //     const dayName = dateObj.toLocaleDateString("en-US", {
 //       weekday: "short",
@@ -107,342 +205,442 @@
 //     });
 
 //     return NextResponse.json({ success: true });
+
 //   } catch (err) {
-//     console.error(err);
+//     console.error("OFFER ERROR:", err);
 //     return NextResponse.json({ error: "SERVER_ERROR" }, { status: 500 });
 //   }
 // }
 
-// /* =====================================================
-//    GET unchanged
-// ===================================================== */
-// export async function GET() {
+// /* ============================================================
+//    GET → LIST OR SINGLE SKILL
+// ============================================================ */
+
+// export async function GET(req: Request) {
 //   try {
-//     const cookieStore = await cookies();
-//     const token = cookieStore.get("token")?.value;
+//     const userId = await getUserId();
 
-//     if (!token) return NextResponse.json({ skills: [] });
+//     if (!userId) {
+//       return NextResponse.json({ skills: [] });
+//     }
 
-//     const decoded: any = jwt.verify(token, JWT_SECRET);
-//     const userId = Number(decoded?.id);
-// const user = await prisma.user.findUnique({
-//   where: { id: decoded.id },
-//   select: { status: true },
-// });
+//     const { searchParams } = new URL(req.url);
+//     const id = searchParams.get("id");
 
-// if (user?.status === "SUSPENDED") {
-//   return NextResponse.json(
-//     { error: "ACCOUNT_SUSPENDED" },
-//     { status: 403 }
-//   );
-// }
+//     const now = new Date();
+
+//     /* ================= SINGLE SKILL ================= */
+
+//     if (id) {
+//       const skill = await prisma.skill.findFirst({
+//         where: {
+//           id: Number(id),
+//           userId,
+//           type: "OFFER",
+//         },
+//         include: {
+//           slots: {
+//             orderBy: { date: "asc" },
+//           },
+//         },
+//       });
+
+//       if (!skill) {
+//         return NextResponse.json({ skill: null });
+//       }
+
+//       // 🔥 Remove expired slots
+//       const cleanedSlots = skill.slots.filter((slot) => {
+//         if (!slot.date || !slot.timeTo) return false;
+
+//         const slotEnd = new Date(slot.date);
+//         const [hours, minutes] = slot.timeTo.split(":").map(Number);
+//         slotEnd.setHours(hours, minutes, 0, 0);
+
+//         return slotEnd > now;
+//       });
+
+//       return NextResponse.json({
+//         skill: {
+//           ...skill,
+//           slots: cleanedSlots,
+//         },
+//       });
+//     }
+
+//     /* ================= ALL OFFER SKILLS ================= */
 
 //     const skills = await prisma.skill.findMany({
-//       where: { userId, type: "OFFER" },
-//       include: { slots: true },
-//       orderBy: { createdAt: "desc" },
+//       where: {
+//         userId,
+//         type: "OFFER",
+//       },
+//       include: {
+//         slots: {
+//           orderBy: { date: "asc" },
+//         },
+//       },
+//       orderBy: {
+//         createdAt: "desc",
+//       },
 //     });
 
-//     return NextResponse.json({ skills });
-//   } catch {
+//     const cleanedSkills = skills.map((skill) => {
+//       const futureSlots = skill.slots.filter((slot) => {
+//         if (!slot.date || !slot.timeTo) return false;
+
+//         const slotEnd = new Date(slot.date);
+//         const [hours, minutes] = slot.timeTo.split(":").map(Number);
+//         slotEnd.setHours(hours, minutes, 0, 0);
+
+//         return slotEnd > now;
+//       });
+
+//       return {
+//         ...skill,
+//         slots: futureSlots,
+//       };
+//     });
+
+//     return NextResponse.json({ skills: cleanedSkills });
+
+//   } catch (err) {
+//     console.error("GET OFFER ERROR:", err);
 //     return NextResponse.json({ skills: [] });
 //   }
 // }
+
 
 
 import { cookies } from "next/headers";
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
+import { Skill } from "@prisma/client";
 
 const JWT_SECRET = process.env.JWT_SECRET!;
 
 /* ============================================================
-   AUTH HELPER
+AUTH HELPER
 ============================================================ */
 
 async function getUserId() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token")?.value;
+const cookieStore = await cookies();
+const token = cookieStore.get("token")?.value;
 
-  if (!token) return null;
+if (!token) return null;
 
-  try {
-    const decoded: any = jwt.verify(token, JWT_SECRET);
-    return Number(decoded?.id);
-  } catch {
-    return null;
-  }
+try {
+const decoded: any = jwt.verify(token, JWT_SECRET);
+return Number(decoded?.id);
+} catch {
+return null;
+}
 }
 
 /* ============================================================
-   POST → CREATE SKILL OR ADD SLOT
+POST → CREATE SKILL OR ADD SLOT
 ============================================================ */
 
 export async function POST(req: Request) {
-  try {
-    const userId = await getUserId();
+try {
+const userId = await getUserId();
 
-    if (!userId) {
-      return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
-    }
 
-    const {
-      teachSkill,
-      teachLevel,
-      teachDesc,
-      sessionLength,
-      selectedDate,
-      fromTime,
-      toTime,
-      platform,
-      publicListing,
-      editId,
-    } = await req.json();
+if (!userId) {
+  return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
+}
 
-    /* ================= VALIDATION ================= */
+const {
+  teachSkill,
+  teachLevel,
+  teachDesc,
+  sessionLength,
+  selectedDate,
+  fromTime,
+  toTime,
+  platform,
+  publicListing,
+  editId,
+  proofs
+} = await req.json();
 
-    if (!teachSkill?.trim()) {
-      return NextResponse.json(
-        { error: "SKILL_NAME_REQUIRED" },
-        { status: 400 }
-      );
-    }
+/* ================= VALIDATION ================= */
 
-    if (!selectedDate || !fromTime || !toTime) {
-      return NextResponse.json(
-        { error: "DATE_TIME_REQUIRED" },
-        { status: 400 }
-      );
-    }
+if (!teachSkill?.trim()) {
+  return NextResponse.json(
+    { error: "SKILL_NAME_REQUIRED" },
+    { status: 400 }
+  );
+}
 
-    const session = Number(sessionLength);
+if (!selectedDate || !fromTime || !toTime) {
+  return NextResponse.json(
+    { error: "DATE_TIME_REQUIRED" },
+    { status: 400 }
+  );
+}
 
-    const start = new Date(`1970-01-01T${fromTime}`);
-    const end = new Date(`1970-01-01T${toTime}`);
+if (!proofs || proofs.length === 0) {
+  return NextResponse.json(
+    { error: "CERTIFICATION_REQUIRED" },
+    { status: 400 }
+  );
+}
 
-    const diffMinutes = (end.getTime() - start.getTime()) / 60000;
+const session = Number(sessionLength);
 
-    if (diffMinutes !== session) {
-      return NextResponse.json(
-        { error: "TIME_MUST_EQUAL_SESSION_LENGTH" },
-        { status: 400 }
-      );
-    }
+const start = new Date(`1970-01-01T${fromTime}`);
+const end = new Date(`1970-01-01T${toTime}`);
 
-    /* ================= PREVENT PAST SLOT ================= */
+const diffMinutes = (end.getTime() - start.getTime()) / 60000;
 
-    const now = new Date();
-    const dateObj = new Date(selectedDate);
+if (diffMinutes !== session) {
+  return NextResponse.json(
+    { error: "TIME_MUST_EQUAL_SESSION_LENGTH" },
+    { status: 400 }
+  );
+}
 
-    const slotEnd = new Date(selectedDate);
-    const [h, m] = toTime.split(":").map(Number);
-    slotEnd.setHours(h, m, 0, 0);
+/* ================= PREVENT PAST SLOT ================= */
 
-    if (slotEnd <= now) {
-      return NextResponse.json(
-        { error: "CANNOT_CREATE_PAST_SLOT" },
-        { status: 400 }
-      );
-    }
+const now = new Date();
+const dateObj = new Date(selectedDate);
 
-    /* ============================================================
-       FIND OR CREATE SKILL
-    ============================================================ */
+const slotEnd = new Date(selectedDate);
+const [h, m] = toTime.split(":").map(Number);
+slotEnd.setHours(h, m, 0, 0);
 
-    let skill;
-
-    if (editId) {
-      // 🔥 EDIT MODE → Only add slot
-      skill = await prisma.skill.findFirst({
-        where: {
-          id: Number(editId),
-          userId,
-          type: "OFFER",
-        },
-      });
-
-      if (!skill) {
-        return NextResponse.json(
-          { error: "SKILL_NOT_FOUND" },
-          { status: 404 }
-        );
-      }
-
-      // ✅ DO NOT TOUCH STATUS
-    } else {
-      // 🔥 CREATE MODE
-      skill = await prisma.skill.findFirst({
-        where: {
-          userId,
-          type: "OFFER",
-          name: {
-            equals: teachSkill.trim(),
-            mode: "insensitive",
-          },
-        },
-      });
-
-      if (!skill) {
-        // ✅ Only new skill is PENDING
-        skill = await prisma.skill.create({
-          data: {
-            name: teachSkill.trim(),
-            type: "OFFER",
-            level: teachLevel ?? null,
-            description: teachDesc ?? null,
-            platform: platform ?? null,
-            publicListing: publicListing ?? true,
-            sessionLength: session,
-            userId,
-            status: "PENDING",
-          },
-        });
-      }
-
-      // ✅ If skill already exists → keep current status
-    }
-
-    /* ============================================================
-       PREVENT DUPLICATE SLOT
-    ============================================================ */
-
-    const existingSlot = await prisma.skillSlot.findFirst({
-      where: {
-        skillId: skill.id,
-        date: dateObj,
-        timeFrom: fromTime,
-        timeTo: toTime,
-      },
-    });
-
-    if (existingSlot) {
-      return NextResponse.json(
-        { error: "SLOT_ALREADY_EXISTS" },
-        { status: 400 }
-      );
-    }
-
-    /* ============================================================
-       CREATE SLOT
-    ============================================================ */
-
-    const dayName = dateObj.toLocaleDateString("en-US", {
-      weekday: "short",
-    });
-
-    await prisma.skillSlot.create({
-      data: {
-        skillId: skill.id,
-        date: dateObj,
-        day: dayName,
-        timeFrom: fromTime,
-        timeTo: toTime,
-      },
-    });
-
-    return NextResponse.json({ success: true });
-
-  } catch (err) {
-    console.error("OFFER ERROR:", err);
-    return NextResponse.json({ error: "SERVER_ERROR" }, { status: 500 });
-  }
+if (slotEnd <= now) {
+  return NextResponse.json(
+    { error: "CANNOT_CREATE_PAST_SLOT" },
+    { status: 400 }
+  );
 }
 
 /* ============================================================
-   GET → LIST OR SINGLE SKILL
+   FIND OR CREATE SKILL
+============================================================ */
+
+let skill: Skill | null = null;
+
+if (editId) {
+
+  skill = await prisma.skill.findFirst({
+    where: {
+      id: Number(editId),
+      userId,
+      type: "OFFER"
+    }
+  });
+
+  if (!skill) {
+    return NextResponse.json(
+      { error: "SKILL_NOT_FOUND" },
+      { status: 404 }
+    );
+  }
+
+} else {
+
+  skill = await prisma.skill.findFirst({
+    where: {
+      userId,
+      type: "OFFER",
+      name: {
+        equals: teachSkill.trim(),
+        mode: "insensitive"
+      }
+    }
+  });
+
+  if (!skill) {
+
+    skill = await prisma.skill.create({
+      data: {
+        name: teachSkill.trim(),
+        type: "OFFER",
+        level: teachLevel ?? null,
+        description: teachDesc ?? null,
+        platform: platform ?? null,
+        publicListing: publicListing ?? true,
+        sessionLength: session,
+        userId,
+        status: "PENDING"
+      }
+    });
+
+    /* ================= SAVE PROOFS ================= */
+
+    if (proofs && proofs.length > 0) {
+      await prisma.skillProof.createMany({
+        data: proofs.map((p: any) => ({
+          skillId: skill!.id,
+          url: p.url,
+          type: p.type
+        }))
+      });
+    }
+
+  }
+
+}
+
+if (!skill) {
+  return NextResponse.json(
+    { error: "SKILL_NOT_FOUND" },
+    { status: 404 }
+  );
+}
+
+/* ============================================================
+   PREVENT DUPLICATE SLOT
+============================================================ */
+
+const existingSlot = await prisma.skillSlot.findFirst({
+  where: {
+    skillId: skill.id,
+    date: dateObj,
+    timeFrom: fromTime,
+    timeTo: toTime
+  }
+});
+
+if (existingSlot) {
+  return NextResponse.json(
+    { error: "SLOT_ALREADY_EXISTS" },
+    { status: 400 }
+  );
+}
+
+/* ============================================================
+   CREATE SLOT
+============================================================ */
+
+const dayName = dateObj.toLocaleDateString("en-US", {
+  weekday: "short"
+});
+
+await prisma.skillSlot.create({
+  data: {
+    skillId: skill.id,
+    date: dateObj,
+    day: dayName,
+    timeFrom: fromTime,
+    timeTo: toTime
+  }
+});
+
+return NextResponse.json({ success: true });
+
+} catch (err) {
+console.error("OFFER ERROR:", err);
+return NextResponse.json(
+{ error: "SERVER_ERROR" },
+{ status: 500 }
+);
+}
+}
+
+/* ============================================================
+GET → LIST OR SINGLE SKILL
 ============================================================ */
 
 export async function GET(req: Request) {
-  try {
-    const userId = await getUserId();
+try {
+const userId = await getUserId();
 
-    if (!userId) {
-      return NextResponse.json({ skills: [] });
-    }
 
-    const { searchParams } = new URL(req.url);
-    const id = searchParams.get("id");
+if (!userId) {
+  return NextResponse.json({ skills: [] });
+}
 
-    const now = new Date();
+const { searchParams } = new URL(req.url);
+const id = searchParams.get("id");
 
-    /* ================= SINGLE SKILL ================= */
+const now = new Date();
 
-    if (id) {
-      const skill = await prisma.skill.findFirst({
-        where: {
-          id: Number(id),
-          userId,
-          type: "OFFER",
-        },
-        include: {
-          slots: {
-            orderBy: { date: "asc" },
-          },
-        },
-      });
+/* ================= SINGLE SKILL ================= */
 
-      if (!skill) {
-        return NextResponse.json({ skill: null });
+if (id) {
+
+  const skill = await prisma.skill.findFirst({
+    where: {
+      id: Number(id),
+      userId,
+      type: "OFFER"
+    },
+    include: {
+      slots: {
+        orderBy: { date: "asc" }
       }
-
-      // 🔥 Remove expired slots
-      const cleanedSlots = skill.slots.filter((slot) => {
-        if (!slot.date || !slot.timeTo) return false;
-
-        const slotEnd = new Date(slot.date);
-        const [hours, minutes] = slot.timeTo.split(":").map(Number);
-        slotEnd.setHours(hours, minutes, 0, 0);
-
-        return slotEnd > now;
-      });
-
-      return NextResponse.json({
-        skill: {
-          ...skill,
-          slots: cleanedSlots,
-        },
-      });
     }
+  });
 
-    /* ================= ALL OFFER SKILLS ================= */
-
-    const skills = await prisma.skill.findMany({
-      where: {
-        userId,
-        type: "OFFER",
-      },
-      include: {
-        slots: {
-          orderBy: { date: "asc" },
-        },
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
-
-    const cleanedSkills = skills.map((skill) => {
-      const futureSlots = skill.slots.filter((slot) => {
-        if (!slot.date || !slot.timeTo) return false;
-
-        const slotEnd = new Date(slot.date);
-        const [hours, minutes] = slot.timeTo.split(":").map(Number);
-        slotEnd.setHours(hours, minutes, 0, 0);
-
-        return slotEnd > now;
-      });
-
-      return {
-        ...skill,
-        slots: futureSlots,
-      };
-    });
-
-    return NextResponse.json({ skills: cleanedSkills });
-
-  } catch (err) {
-    console.error("GET OFFER ERROR:", err);
-    return NextResponse.json({ skills: [] });
+  if (!skill) {
+    return NextResponse.json({ skill: null });
   }
+
+  const cleanedSlots = skill.slots.filter((slot) => {
+
+    const slotEnd = new Date(slot.date);
+    const [h, m] = slot.timeTo.split(":").map(Number);
+    slotEnd.setHours(h, m, 0, 0);
+
+    return slotEnd > now;
+
+  });
+
+  return NextResponse.json({
+    skill: {
+      ...skill,
+      slots: cleanedSlots
+    }
+  });
+
+}
+
+/* ================= ALL OFFER SKILLS ================= */
+
+const skills = await prisma.skill.findMany({
+  where: {
+    userId,
+    type: "OFFER"
+  },
+  include: {
+    slots: {
+      orderBy: { date: "asc" }
+    }
+  },
+  orderBy: {
+    createdAt: "desc"
+  }
+});
+
+const cleanedSkills = skills.map((skill) => {
+
+  const futureSlots = skill.slots.filter((slot) => {
+
+    const slotEnd = new Date(slot.date);
+    const [h, m] = slot.timeTo.split(":").map(Number);
+    slotEnd.setHours(h, m, 0, 0);
+
+    return slotEnd > now;
+
+  });
+
+  return {
+    ...skill,
+    slots: futureSlots
+  };
+
+});
+
+return NextResponse.json({ skills: cleanedSkills });
+
+
+} catch (err) {
+console.error("GET OFFER ERROR:", err);
+return NextResponse.json({ skills: [] });
+}
 }

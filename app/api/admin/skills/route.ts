@@ -76,41 +76,108 @@
 
 // after noti
 
-
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { verifyAdmin } from "@/lib/auth";
+import { SkillType, SkillStatus } from "@prisma/client";
 
 export async function GET(req: Request) {
-  try {
-    const admin = await verifyAdmin();
-    if (!admin) {
-      return NextResponse.json(
-        { error: "UNAUTHORIZED", skills: [] },
-        { status: 401 }
-      );
-    }
+try {
+const admin = await verifyAdmin();
 
-    const skills = await prisma.skill.findMany({
-      include: {
-        user: {
-          select: {
-            firstName: true,
-            lastName: true,
-            email: true,
-          },
-        },
-      },
-      orderBy: { createdAt: "desc" },
-    });
 
-    return NextResponse.json({ skills });
+if (!admin) {
+  return NextResponse.json(
+    { error: "UNAUTHORIZED", skills: [] },
+    { status: 401 }
+  );
+}
 
-  } catch (err) {
-    console.error("ADMIN SKILLS GET ERROR:", err);
-    return NextResponse.json(
-      { error: "SERVER_ERROR", skills: [] },
-      { status: 500 }
-    );
+/* ======================================================
+   READ QUERY PARAMETERS
+====================================================== */
+
+const { searchParams } = new URL(req.url);
+
+const q = searchParams.get("q") || "";
+
+const typeParam = searchParams.get("type");
+const statusParam = searchParams.get("status");
+
+const type = typeParam as SkillType | null;
+const status = statusParam as SkillStatus | null;
+
+/* ======================================================
+   BUILD WHERE FILTER
+====================================================== */
+
+const where: any = {
+  AND: [
+    q
+      ? {
+          name: {
+            contains: q,
+            mode: "insensitive"
+          }
+        }
+      : {},
+
+    type
+      ? {
+          type: type
+        }
+      : {},
+
+    status
+      ? {
+          status: status
+        }
+      : {}
+  ]
+};
+
+/* ======================================================
+   QUERY SKILLS
+====================================================== */
+
+const skills = await prisma.skill.findMany({
+  where,
+
+  include: {
+    user: {
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true
+      }
+    },
+
+    proofs: true
+  },
+
+  orderBy: {
+    createdAt: "desc"
   }
+});
+
+/* ======================================================
+   RESPONSE
+====================================================== */
+
+return NextResponse.json({ skills });
+
+
+} catch (err) {
+
+
+console.error("ADMIN SKILLS GET ERROR:", err);
+
+return NextResponse.json(
+  { error: "SERVER_ERROR", skills: [] },
+  { status: 500 }
+);
+
+
+}
 }

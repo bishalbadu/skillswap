@@ -39,7 +39,6 @@ export default function AdminSwapsPage() {
               <th className="p-3 text-left">Slot</th>
               <th className="p-3 text-left">Status</th>
               <th className="p-3 text-left">Date</th>
-              <th className="p-3 text-left">Actions</th>
             </tr>
           </thead>
 
@@ -75,17 +74,6 @@ export default function AdminSwapsPage() {
 
                 <td className="p-3">
                   {new Date(s.createdAt).toLocaleDateString()}
-                </td>
-
-                <td className="p-3">
-                  {s.status === "PENDING" && (
-                    <button
-                      onClick={() => cancelSwap(s.id)}
-                      className="text-red-600 hover:underline"
-                    >
-                      Cancel
-                    </button>
-                  )}
                 </td>
               </tr>
             ))}
