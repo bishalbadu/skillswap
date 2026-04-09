@@ -6,7 +6,7 @@
 // import { useParams } from "next/navigation";
 // import RequestSwapModal from "../../find-skills/RequestSwapModal";
 
-// /* ⭐ Star Rating */
+// /*  Star Rating */
 // function StarRating({ rating }: { rating: number }) {
 //   return (
 //     <div className="text-yellow-500 text-sm">
@@ -95,7 +95,7 @@
 //                 <div>Session: {skill.sessionLength} mins</div>
 //               </div>
 
-//               {/* ⭐ AVAILABILITY WITH DATE */}
+//               {/*  AVAILABILITY WITH DATE */}
 //               <div className="mt-4 space-y-2">
 //                 <p className="text-sm font-medium">Available slots:</p>
 
@@ -122,7 +122,7 @@
 //                 </div>
 //               </div>
 
-//               {/* ⭐ REQUEST SWAP BUTTON RESTORED */}
+//               {/*  REQUEST SWAP BUTTON RESTORED */}
 //               <button
 //                 onClick={() => {
 //                   setSelectedSkill(skill);
@@ -144,7 +144,7 @@
 //   open={open}
 //   skill={selectedSkill}
 //   slot={selectedSlot}
-//   user={user}   // ⭐ ADD THIS
+//   user={user}   //  ADD THIS
 //   onClose={() => setOpen(false)}
 // />
 
@@ -164,7 +164,8 @@ import ReportUserModal from "@/components/ReportUserModal";
 import PremiumModal from "@/components/PremiumModal";
 
 
-/* ⭐ Star Rating */
+
+/*  Star Rating */
 function StarRating({ rating }: { rating: number }) {
   return (
     <div className="text-yellow-500 text-sm">
@@ -192,10 +193,15 @@ const id = params?.id;
   const [reportOpen, setReportOpen] = useState(false);
   const [premiumOpen, setPremiumOpen] = useState(false);
 
+  const FREE_LIMIT = 1;
+const [completedSwaps, setCompletedSwaps] = useState(0);
+const [premiumUntil, setPremiumUntil] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadProfile();
-  }, []);
+
+ useEffect(() => {
+  loadProfile();
+  loadMyPlanStatus(); //  IMPORTANT
+}, []);
 
   async function loadProfile() {
     const res = await fetch(`/api/profile/public/${id}`, {
@@ -205,11 +211,31 @@ const id = params?.id;
     setProfile(data);
     setLoading(false);
   }
+async function loadMyPlanStatus() {
+  try {
+    const res = await fetch("/api/users/me", {
+      credentials: "include",
+    });
+
+    const data = await res.json();
+
+    console.log("PLAN DATA:", data); // 
+
+    if (data.user) {
+      setCompletedSwaps(data.user.completedSwaps || 0);
+      setPremiumUntil(data.user.premiumUntil || null);
+    }
+  } catch (err) {
+    console.log("PLAN ERROR", err);
+  }
+}
 
   if (loading) return <div className="p-10">Loading profile...</div>;
   if (!profile?.user) return <div className="p-10">User not found.</div>;
 
   const { user, skillsOffered } = profile;
+  const isPremiumActive =
+  premiumUntil && new Date(premiumUntil).getTime() > Date.now();
 
   return (
     <div className="max-w-5xl mx-auto p-10 space-y-8">
@@ -238,7 +264,7 @@ const id = params?.id;
 
   {user.membership === "PREMIUM" && (
     <span className="bg-yellow-500 text-white text-xs px-2 py-1 rounded">
-      ⭐ PREMIUM
+       PREMIUM
     </span>
   )}
 </div>
@@ -262,7 +288,7 @@ const id = params?.id;
     onClick={() => setReportOpen(true)}
     className="text-sm border border-red-500 text-red-600 px-3 py-1 rounded hover:bg-red-50"
   >
-    🚨 Report User
+     Report User
   </button>
 </div>
 
@@ -274,13 +300,11 @@ const id = params?.id;
         <div className="grid grid-cols-2 gap-5">
           {skillsOffered.map((skill: any) => {
 
-              const isRequested =
-    optimisticRequested[skill.id] || skill.alreadyRequested;
+             const isRequestedForSlot = (slotId: number) =>
+  optimisticRequested[slotId] || false;
 
   const canShowButton =
-    skill.canRequest &&
-    !isRequested &&
-    skill.slots.length > 0;
+  skill.canRequest && skill.slots.length > 0;
 
 
             return (
@@ -292,7 +316,6 @@ const id = params?.id;
 
                 <div className="text-sm mt-3 space-y-1 text-gray-700">
                   <div>Level: {skill.level}</div>
-                  <div>Platform: {skill.platform}</div>
                   <div>Session: {skill.sessionLength} mins</div>
                 </div>
 
@@ -307,39 +330,61 @@ const id = params?.id;
 )}
 
                   <div className="flex flex-wrap gap-2">
+{skill.slots
+  .filter((slot: any) => {
+  const now = new Date();
 
-                    {skill.slots.map((slot: any) => (
-                      <button
-                        key={slot.id}
-                       onClick={() => {
-  setSelectedSkill(skill);
-  setSelectedSlot(slot);
+  const d = new Date(slot.date);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
 
-  setErrors((prev) => ({
-    ...prev,
-    [skill.id]: "",
-  }));
-}}
+  const slotStart = new Date(
+    `${year}-${month}-${day}T${slot.timeFrom}:00`
+  );
 
-                        className={`
-                          px-3 py-1 text-xs rounded-full border transition
-                          ${
-                            selectedSlot?.id === slot.id &&
-                            selectedSkill?.id === skill.id
-                              ? "bg-[#4a5e27] text-white"
-                              : "bg-[#eef2ea] hover:bg-[#4a5e27] hover:text-white"
-                          }
-                        `}
-                      >
-                        {new Date(slot.date).toLocaleDateString()}{" "}
-                        {slot.timeFrom}-{slot.timeTo}
-                      </button>
-                    ))}
+  return slotStart > now;
+})
+
+
+  .map((slot: any) => {
+  const isRequested = isRequestedForSlot(slot.id);
+
+  return isRequested ? (
+    <span
+      key={slot.id}
+      className="px-3 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800 font-medium"
+    >
+      ✓ Request Sent
+    </span>
+  ) : (
+    <button
+      key={slot.id}
+      onClick={() => {
+        setSelectedSkill(skill);
+        setSelectedSlot(slot);
+        setErrors((prev) => ({
+          ...prev,
+          [skill.id]: "",
+        }));
+      }}
+      className={`px-3 py-1 text-xs rounded-full border transition ${
+        selectedSlot?.id === slot.id &&
+        selectedSkill?.id === skill.id
+          ? "bg-[#4a5e27] text-white"
+          : "bg-[#eef2ea] hover:bg-[#4a5e27] hover:text-white"
+      }`}
+    >
+      {new Date(slot.date).toLocaleDateString()}{" "}
+      {slot.timeFrom}-{slot.timeTo}
+    </button>
+  );
+})}
 
                   </div>
                 </div>
 {/* ================= REQUEST BUTTON ================= */}
-{!isRequested && canShowButton && (
+{canShowButton && (
   <>
     <button
       onClick={() => {
@@ -351,7 +396,12 @@ const id = params?.id;
           return;
         }
 
-        setOpen(true);
+       if (completedSwaps >= FREE_LIMIT && !isPremiumActive) {
+  setPremiumOpen(true);
+  return;
+}
+
+setOpen(true);
       }}
       className="mt-3 w-full bg-[#4a5e27] text-white rounded py-2"
     >
@@ -367,7 +417,7 @@ const id = params?.id;
 )}
 
 {/* ================= REQUEST SENT ================= */}
-{isRequested && (
+{skill.slots.some((slot: any) => slot.alreadyRequested) && (
   <div className="mt-3 text-center text-sm bg-yellow-100 text-yellow-800 rounded py-2">
     ✓ Request Sent
   </div>
@@ -390,7 +440,7 @@ const id = params?.id;
     onSuccess={() => {
       setOptimisticRequested((prev) => ({
         ...prev,
-        [selectedSkill.id]: true,
+        [selectedSlot.id]: true,
       }));
     }}
     onPremiumRequired={() => {

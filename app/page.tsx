@@ -89,6 +89,8 @@
 //   );
 // }
 
+
+
 "use client";
 
 import Navbar from "@/components/Navbar";
@@ -99,8 +101,10 @@ import TopUsers from "@/components/TopUsers";
 import VideoCTA from "@/components/VideoCTA";
 import Footer from "@/components/Footer";
 import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 
 export default function HomePage() {
+   const router = useRouter();
   return (
     <main className="bg-[#F8F9F4] min-h-screen overflow-hidden">
 
@@ -208,13 +212,12 @@ export default function HomePage() {
     </p>
 
     <div className="flex justify-center gap-4">
-      <button className="px-7 py-3 bg-[#B8860B] text-white rounded-xl shadow-lg hover:scale-110 transition duration-300">
-        Register Now
-      </button>
-
-      <button className="px-7 py-3 border border-[#556B2F] text-[#556B2F] rounded-xl hover:bg-[#556B2F] hover:text-white transition duration-300">
-        Explore
-      </button>
+       <button
+      onClick={() => router.push("/register")}
+      className="px-7 py-3 bg-[#B8860B] text-white font-bold text-xl rounded-xl shadow-lg hover:scale-110 transition duration-300"
+    >
+      Register Now
+    </button>
     </div>
   </div>
 

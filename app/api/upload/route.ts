@@ -3,7 +3,7 @@ import { getUserFromRequest } from "@/lib/auth";
 
 export async function POST(req: Request) {
   try {
-    // ✅ FIX: call with NO arguments
+    //  FIX: call with NO arguments
     const user = await getUserFromRequest();
 
     if (!user) {

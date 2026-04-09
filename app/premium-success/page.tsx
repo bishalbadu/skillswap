@@ -16,7 +16,7 @@ export default function PremiumSuccess() {
         return;
       }
 
-      // 🔥 FIX: remove accidental "?data=" part
+      //  FIX: remove accidental "?data=" part
       const uuid = rawUuid.split("?")[0];
 
       try {

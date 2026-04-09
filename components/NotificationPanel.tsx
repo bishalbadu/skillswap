@@ -54,7 +54,7 @@ export default function NotificationPanel({
 );
 
 
-    // ✅ REDIRECT AFTER CLICK
+    //  REDIRECT AFTER CLICK
     if (n.link) {
       onClose();
       router.push(n.link);

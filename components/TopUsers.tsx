@@ -27,21 +27,21 @@ export default function TopUsers() {
   return (
    <section className="relative py-20 overflow-hidden bg-[#eef2e3] text-center">
 
-  {/* 🌿 soft radial glow (theme gold) */}
+  {/*  soft radial glow (theme gold) */}
   <div className="pointer-events-none absolute inset-0
     bg-[radial-gradient(circle_at_30%_20%,rgba(184,134,11,0.15),transparent_60%),
         radial-gradient(circle_at_80%_80%,rgba(85,107,47,0.12),transparent_60%)]" />
 
-  {/* 🔳 subtle grid texture */}
+  {/*  subtle grid texture */}
   <div className="pointer-events-none absolute inset-0 opacity-[0.06]
     [background-image:linear-gradient(#556B2F_1px,transparent_1px),linear-gradient(90deg,#556B2F_1px,transparent_1px)]
     [background-size:40px_40px]" />
 
-  {/* ✨ floating soft blobs */}
+  {/*  floating soft blobs */}
   <div className="pointer-events-none absolute -top-24 -left-24 w-72 h-72 bg-[#B8860B]/20 blur-[120px] rounded-full animate-pulse" />
   <div className="pointer-events-none absolute -bottom-24 -right-24 w-72 h-72 bg-[#556B2F]/20 blur-[120px] rounded-full animate-pulse" />
 
-  {/* 🧠 CONTENT */}
+  {/*  CONTENT */}
   <div className="relative max-w-7xl mx-auto px-6">
     <h3 className="text-4xl md:text-5xl font-bold mb-14 text-[#556B2F]">
       Top Users of This Week

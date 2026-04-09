@@ -1,4 +1,15 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+
+import {
+  FiHome,
+  FiUsers,
+  FiLayers,
+  FiRepeat,
+  FiBarChart2,
+} from "react-icons/fi";
 
 export default function AdminLayout({
   children,
@@ -8,27 +19,50 @@ export default function AdminLayout({
   return (
     <div className="flex min-h-screen bg-[#f6f7f3]">
       {/* SIDEBAR */}
-      <aside className="w-64 bg-[#4a5e27] text-white flex flex-col">
+      <aside className="w-64 bg-[#7e9c6c] text-white flex flex-col shadow-xl">
+        
         {/* BRAND */}
         <div className="p-6 border-b border-white/10">
-          <h2 className="text-2xl font-bold">SkillSwap Admin</h2>
+          <h2 className="text-2xl font-bold tracking-wide">
+            SkillSwap
+          </h2>
           <p className="text-xs text-white/70 mt-1">
-            Control Panel
+            Admin Panel
           </p>
         </div>
 
         {/* NAV */}
-        <nav className="flex-1 px-4 py-6 space-y-1 text-sm">
-          <SidebarLink href="/admin/dashboard" label="Dashboard Overview" />
-          <SidebarLink href="/admin/users" label="User Management" />
-          <SidebarLink href="/admin/skills" label="Skill Moderation" />
-          <SidebarLink href="/admin/swaps" label="Swap Requests" />
-          <SidebarLink href="/admin/reports" label="Reports" />
+        <nav className="flex-1 px-3 py-6 space-y-2">
+          <SidebarLink
+            href="/admin/dashboard"
+            label="Dashboard"
+            icon={<FiHome />}
+          />
+          <SidebarLink
+            href="/admin/users"
+            label="Users"
+            icon={<FiUsers />}
+          />
+          <SidebarLink
+            href="/admin/skills"
+            label="Skills"
+            icon={<FiLayers />}
+          />
+          <SidebarLink
+            href="/admin/swaps"
+            label="Swaps"
+            icon={<FiRepeat />}
+          />
+          <SidebarLink
+            href="/admin/reports"
+            label="Reports"
+            icon={<FiBarChart2 />}
+          />
         </nav>
 
         {/* FOOTER */}
         <div className="p-4 border-t border-white/10 text-xs text-white/70">
-          Logged in as admin<br />
+          Logged in as admin <br />
           All actions are monitored
         </div>
       </aside>
@@ -41,21 +75,46 @@ export default function AdminLayout({
   );
 }
 
+/* ===================== SIDEBAR LINK ===================== */
+
 function SidebarLink({
   href,
   label,
+  icon,
+  badge,
 }: {
   href: string;
   label: string;
+  icon: React.ReactNode;
+  badge?: number;
 }) {
+  const pathname = usePathname();
+  const isActive = pathname === href;
+
   return (
     <Link
       href={href}
-      className="block px-4 py-2 rounded-md transition
-                 hover:bg-[#3f5120]
-                 hover:pl-5"
+      className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200
+        ${
+          isActive
+            ? "bg-white text-[#3f5120] shadow-md"
+            : "bg-white/10 hover:bg-white/20 text-white"
+        }
+        hover:scale-[1.03]
+      `}
     >
-      {label}
+      {/* LEFT */}
+      <div className="flex items-center gap-3">
+        <span className="text-lg">{icon}</span>
+        <span>{label}</span>
+      </div>
+
+      {/* BADGE */}
+      {badge && (
+        <span className="bg-[#d36d5c] text-white text-xs px-2 py-0.5 rounded-full">
+          {badge}
+        </span>
+      )}
     </Link>
   );
 }

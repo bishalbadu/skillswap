@@ -111,7 +111,7 @@ export default function AdminLogin() {
   const [submitting, setSubmitting] = useState(false);
 
   /* ============================
-     🔐 CHECK EXISTING ADMIN SESSION
+     CHECK EXISTING ADMIN SESSION
   ============================ */
   useEffect(() => {
     fetch("/api/admin/me", {

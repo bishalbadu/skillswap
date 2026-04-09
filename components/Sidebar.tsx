@@ -25,7 +25,7 @@ const path = usePathname();
 const [openNotif, setOpenNotif] = useState(false);
 const [unreadCount, setUnreadCount] = useState(0);
 
-// ⭐ NEW: chat unread count
+//  NEW: chat unread count
 const [chatUnread, setChatUnread] = useState(0);
 
 /* ==========================
@@ -86,7 +86,7 @@ const items = [
 
 { text: "Skill Meet", href: "/dashboard/skillmeet", icon: <FaCalendarAlt size={17} /> },
 
-// ⭐ UPDATED CHAT ITEM WITH BADGE
+//  UPDATED CHAT ITEM WITH BADGE
 {
   text: "Chat",
   href: "/dashboard/chat",
@@ -107,7 +107,7 @@ return (
 
     {items.map((item: any, i) => {
 
-      // ⭐ Notification action button
+      //  Notification action button
       if (item.action) {
 
         return (
@@ -130,16 +130,16 @@ return (
   </div>
 
   {item.badge > 0 && (
-    <span className="bg-red-500 text-xs px-2 py-1 rounded-full animate-pulse">
-      {item.badge}
-    </span>
-  )}
+  <span className="bg-red-500 text-xs px-2 py-1 rounded-full animate-pulse">
+    {item.badge > 9 ? "9+" : item.badge}
+  </span>
+)}
 </button>
         );
       }
 
 
-      // ⭐ Normal links
+      //  Normal links
       return (
         <Link
   key={i}

@@ -9,7 +9,7 @@ export default function Navbar() {
 
       {/* LEFT — LOGO */}
       <div className="flex items-center space-x-2">
-        <Image src="/LOGO.png" alt="SkillSwap Logo" width={42} height={42} />
+        <Image src="/logo.png" alt="SkillSwap Logo" width={42} height={42} />
         <Link href="/" className="text-2xl font-bold text-[#556B2F] cursor-pointer">
           Skill<span className="text-[#4F6F52]">Swap</span>
         </Link>

@@ -424,7 +424,28 @@ export async function POST(req: Request) {
         { status: 409 }
       );
     }
+    /* ================= PREVENT PAST SLOT REQUEST ================= */
 
+const now = new Date();
+
+/* ✅ Build LOCAL date (NOT UTC) */
+const d = new Date(slot.date);
+
+const year = d.getFullYear();
+const month = String(d.getMonth() + 1).padStart(2, "0");
+const day = String(d.getDate()).padStart(2, "0");
+
+/* ✅ Build proper local datetime */
+const slotStart = new Date(
+  `${year}-${month}-${day}T${slot.timeFrom}:00`
+);
+
+if (slotStart <= now) {
+  return NextResponse.json(
+    { error: "SLOT_EXPIRED" },
+    { status: 400 }
+  );
+}
     /* ================= CANNOT REQUEST OWN SKILL ================= */
     if (slot.skill.userId === requesterId) {
       return NextResponse.json(

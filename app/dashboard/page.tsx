@@ -124,7 +124,7 @@ export default function Dashboard() {
       <div className="p-10">
 
         <h1 className="text-3xl font-bold text-[#2c3a21] mb-8">
-          Welcome 👋
+          Welcome 
         </h1>
 
         {/* ================= PREMIUM SECTION ================= */}
@@ -139,7 +139,7 @@ export default function Dashboard() {
 
             <>
               <h2 className="text-xl font-bold text-yellow-600">
-                ⭐ Premium Active
+                 Premium Active
               </h2>
 
               <p className="text-gray-600 mt-2">
@@ -147,7 +147,7 @@ export default function Dashboard() {
               </p>
 
               <div className="mt-4 bg-yellow-100 text-yellow-700 px-4 py-2 rounded-lg">
-                You now have unlimited swaps 🎉
+                You now have unlimited swaps 
               </div>
             </>
 
@@ -155,7 +155,7 @@ export default function Dashboard() {
 
             <>
               <h2 className="text-xl font-bold text-red-600">
-                ⚠ Premium Expired
+                 Premium Expired
               </h2>
 
               <p className="text-gray-600 mt-2">
@@ -191,7 +191,7 @@ export default function Dashboard() {
               {completedSwaps >= FREE_LIMIT && (
                 <div className="mt-6">
                   <p className="text-red-600 font-semibold">
-                    🚀 You have reached your free swap limit.
+                     You have reached your free swap limit.
                   </p>
 
                   <button
@@ -282,7 +282,7 @@ export default function Dashboard() {
           <div className="bg-white rounded-xl p-8 shadow-lg text-center space-y-3">
 
             <h2 className="text-2xl font-bold text-green-600">
-              🎉 Premium Activated!
+               Premium Activated!
             </h2>
 
             <p className="text-gray-600">

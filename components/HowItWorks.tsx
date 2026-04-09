@@ -66,7 +66,7 @@ export default function HowItWorks() {
                 {step.desc}
               </p>
 
-              {/* 👉 CONNECTOR LINE (desktop only) */}
+              {/*  CONNECTOR LINE (desktop only) */}
               {i !== 2 && (
                 <div className="hidden md:block absolute top-1/2 right-[-40px] w-16 h-[2px] bg-[#B8860B]/40" />
               )}

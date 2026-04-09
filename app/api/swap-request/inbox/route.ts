@@ -291,13 +291,23 @@ export async function GET() {
 
       /* EXPIRED */
 
-      else if (
-        r.slot &&
-        r.slot.date &&
-        new Date(r.slot.date).getTime() < now.getTime()
-      ) {
-        computedStatus = "EXPIRED";
-      }
+     else if (r.slot && r.slot.date && r.slot.timeTo) {
+  const now = new Date();
+
+  const d = new Date(r.slot.date);
+
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+
+  const slotEnd = new Date(
+    `${year}-${month}-${day}T${r.slot.timeTo}:00`
+  );
+
+  if (slotEnd <= now) {
+    computedStatus = "EXPIRED";
+  }
+}
 
       return {
         ...r,

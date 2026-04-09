@@ -47,7 +47,7 @@ export default function ReportUserModal({
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white rounded-xl p-6 w-full max-w-md space-y-4">
         <h2 className="text-lg font-semibold text-red-600">
-          🚨 Report User
+           Report User
         </h2>
 
         <select

@@ -21,10 +21,10 @@ export default function WhyChoose() {
   return (
     <section className="relative bg-[#F8F9F4] py-24 px-6">
 
-      {/* ✨ subtle background depth */}
+      {/*  subtle background depth */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(184,134,11,0.08),transparent_70%)]" />
 
-      {/* 🧠 CONTENT */}
+      {/*  CONTENT */}
       <div className="relative max-w-7xl mx-auto text-center">
 
         {/* TITLE */}

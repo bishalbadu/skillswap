@@ -18,12 +18,100 @@ enum SkillType {
   WANT
 }
 
+enum AccountStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum Membership {
+  FREE
+  PREMIUM
+}
+
+enum SkillStatus {
+  PENDING
+  APPROVED
+  DISABLED
+}
+
+enum NotificationType {
+  SKILL_APPROVED
+  SKILL_DISABLED
+  SWAP_REQUESTED
+  SWAP_ACCEPTED
+  SWAP_REJECTED
+  MEETING_LINK_SHARED
+  PAYMENT_RECEIVED
+  PAYMENT_SUCCESS
+  GENERAL
+  ACCOUNT_SUSPENDED
+  ACCOUNT_REACTIVATED
+}
+
+enum ReportReason {
+  FAKE_ACCOUNT
+  SCAM
+  HARASSMENT
+  ILLEGAL_ACTIVITY
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWED
+  ACTION_TAKEN
+  DISMISSED
+}
+
+enum SessionStatus {
+  UPCOMING
+  LIVE
+  COMPLETED
+  CANCELLED
+  EXPIRED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum PremiumPlan {
+  MONTH_1
+  MONTH_6
+}
+
+enum PaymentMethod {
+  ESEWA
+}
+
 model User {
-  id        Int      @id @default(autoincrement())
+  id        Int    @id @default(autoincrement())
   firstName String
   lastName  String
-  email     String   @unique
-  password  String
+  email     String @unique
+
+  password String?
+
+  emailVerified            DateTime?
+  emailVerificationToken   String?
+  emailVerificationExpires DateTime?
+
+  resetPasswordToken   String?
+  resetPasswordExpires DateTime?
+
+  googleId String? @unique
+
+  status     AccountStatus @default(ACTIVE)
+  membership Membership    @default(FREE)
+
+  // ⭐ PREMIUM SYSTEM
+  completedSwaps Int            @default(0)
+  premiumUntil   DateTime?
+  payments       Payment[]
+  notifications  Notification[]
+
   createdAt DateTime @default(now())
   avatar    String?  @default("")
   bio       String?  @default("")
@@ -32,6 +120,18 @@ model User {
 
   sentRequests     SwapRequest[] @relation("RequestsSent")
   receivedRequests SwapRequest[] @relation("RequestsReceived")
+
+  reportsSent     Report[] @relation("ReportsSent")
+  reportsReceived Report[] @relation("ReportsReceived")
+
+  reviewsGiven    Review[] @relation("Reviewer")
+  reviewsReceived Review[] @relation("Reviewee")
+
+  hostedSessions Session[] @relation("SessionHost")
+  joinedSessions Session[] @relation("SessionGuest")
+
+  messages Message[]
+  settings UserSettings?
 }
 
 model Skill {
@@ -39,46 +139,273 @@ model Skill {
   name String
   type SkillType
 
-  // --- OFFER ONLY ---
+  // OFFER fields
   description   String?
   level         String?
   platform      String?
   publicListing Boolean @default(true)
   sessionLength Int?
-  days          String?
-  timeFrom      String?
-  timeTo        String?
 
-  // --- WANT ONLY ---
+    proofs SkillProof[]
+  
+  // WANT field
   learnGoal String?
+
+  // ✅ NEW: moderation status
+  status SkillStatus @default(PENDING)
 
   userId Int
   user   User @relation(fields: [userId], references: [id])
 
-  // 🔑 REQUIRED inverse relation
+  slots        SkillSlot[]
   swapRequests SwapRequest[]
+  sessions     Session[]     @relation("SkillSessions")
 
   createdAt DateTime @default(now())
 
   @@index([type])
   @@index([userId])
+  @@index([status])
+}
+
+model SkillProof {
+  id Int @id @default(autoincrement())
+
+  skillId Int
+  skill   Skill @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  url  String
+  type String  // IMAGE | VIDEO
+
+  createdAt DateTime @default(now())
+
+  @@index([skillId])
+}
+
+model SkillSlot {
+  id Int @id @default(autoincrement())
+
+  skillId Int
+  skill   Skill @relation(fields: [skillId], references: [id])
+
+  day      String
+  timeFrom String
+  timeTo   String
+  date     DateTime
+
+  isBooked Boolean @default(false)
+
+  swapRequests SwapRequest[]
+  sessions     Session[]     @relation("SlotSessions")
+
+  createdAt DateTime @default(now())
+
+  @@index([skillId])
 }
 
 model SwapRequest {
   id Int @id @default(autoincrement())
 
+  // Who sent the request
   requester   User @relation("RequestsSent", fields: [requesterId], references: [id])
   requesterId Int
 
+  // Who received the request
   receiver   User @relation("RequestsReceived", fields: [receiverId], references: [id])
   receiverId Int
 
+  // Skill being requested
   skillId Int
   skill   Skill @relation(fields: [skillId], references: [id])
 
-  message   String?
-  status    SwapStatus @default(PENDING)
-  createdAt DateTime   @default(now())
+  //Specific time slot
+  slotId Int
+  slot   SkillSlot @relation(fields: [slotId], references: [id])
 
-  @@index([requesterId, receiverId])
+  // Optional message
+  message String?
+
+  // Request state
+  status SwapStatus @default(PENDING)
+
+  session Session?
+
+  createdAt DateTime @default(now())
+
+  // Prevent SAME USER from sending multiple PENDING requests for SAME slot
+  @@unique([requesterId, slotId, status], map: "unique_pending_request")
+  // Query optimizations
+  @@index([requesterId])
+  @@index([receiverId])
+  @@index([slotId])
+}
+
+model Notification {
+  id Int @id @default(autoincrement())
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type    NotificationType
+  title   String
+  message String
+
+  link String? // optional redirect URL
+  read Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Report {
+  id Int @id @default(autoincrement())
+
+  // 👤 Who reported
+  reporterId Int
+  reporter   User @relation("ReportsSent", fields: [reporterId], references: [id])
+
+  // 🚨 Who is reported
+  reportedUserId Int
+  reportedUser   User @relation("ReportsReceived", fields: [reportedUserId], references: [id])
+
+  reason  ReportReason
+  message String
+
+  status ReportStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+
+  @@index([reporterId])
+  @@index([reportedUserId])
+  @@index([status])
+}
+
+model Session {
+  id Int @id @default(autoincrement())
+
+  swapRequestId Int         @unique
+  swapRequest   SwapRequest @relation(fields: [swapRequestId], references: [id], onDelete: Cascade)
+
+  skillId Int
+  skill   Skill @relation("SkillSessions", fields: [skillId], references: [id])
+
+  slotId Int
+  slot   SkillSlot @relation("SlotSessions", fields: [slotId], references: [id])
+
+  hostId Int
+  host   User @relation("SessionHost", fields: [hostId], references: [id])
+
+  guestId Int
+  guest   User @relation("SessionGuest", fields: [guestId], references: [id])
+
+  status      SessionStatus @default(UPCOMING)
+  meetingRoom String?
+  startedAt   DateTime?
+  endedAt     DateTime?
+  reviews     Review[]      @relation("SessionReviews")
+
+  messages Message[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([hostId])
+  @@index([guestId])
+  @@index([status])
+}
+
+model Review {
+  id Int @id @default(autoincrement())
+
+  sessionId Int
+  session   Session @relation("SessionReviews", fields: [sessionId], references: [id], onDelete: Cascade)
+
+  reviewerId Int
+  reviewer   User @relation("Reviewer", fields: [reviewerId], references: [id])
+
+  revieweeId Int
+  reviewee   User @relation("Reviewee", fields: [revieweeId], references: [id])
+
+  rating  Int // 1–5
+  comment String?
+
+  createdAt DateTime @default(now())
+
+  @@unique([sessionId, reviewerId]) // 🚫 prevent duplicate rating
+  @@index([revieweeId])
+}
+
+model Payment {
+  id Int @id @default(autoincrement())
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  plan   PremiumPlan
+  amount Int // NPR amount
+  method PaymentMethod @default(ESEWA)
+
+  status PaymentStatus @default(PENDING)
+
+  // eSewa security tracking
+  esewaTransactionUuid String? @unique
+  esewaRefId           String?
+
+  createdAt DateTime  @default(now())
+  paidAt    DateTime?
+
+  @@index([userId])
+  @@index([status])
+}
+
+model Message {
+  id Int @id @default(autoincrement())
+
+  sessionId Int
+  session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  senderId Int
+  sender   User @relation(fields: [senderId], references: [id])
+
+  content   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([sessionId])
+  @@index([senderId])
+  @@index([isRead])
+}
+model UserSettings {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique
+
+  notifySwapRequests       Boolean @default(true)
+  notifyMessages           Boolean @default(true)
+  notifySessionReminders   Boolean @default(true)
+  notifySkillApproval      Boolean @default(true)
+
+  quietHoursEnabled Boolean @default(false)
+  quietHoursFrom    String  @default("22:00")
+  quietHoursTo      String  @default("07:00")
+
+  profileVisibility     String  @default("public")
+  showOfferedSkills     Boolean @default(true)
+  showAvailabilitySlots Boolean @default(true)
+
+  maxActiveSwaps            String  @default("3")
+  autoReminderBeforeSession Boolean @default(true)
+  autoArchiveCompletedChats Boolean @default(false)
+
+  user User @relation(fields: [userId], references: [id])
+}
+//////////////////////
+// ADMIN
+//////////////////////
+model Admin {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  role      String   @default("ADMIN")
+  createdAt DateTime @default(now())
 }

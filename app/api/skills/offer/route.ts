@@ -381,7 +381,8 @@ if (!selectedDate || !fromTime || !toTime) {
   );
 }
 
-if (!proofs || proofs.length === 0) {
+// ONLY require proof when creating new skill
+if (!editId && (!proofs || proofs.length === 0)) {
   return NextResponse.json(
     { error: "CERTIFICATION_REQUIRED" },
     { status: 400 }
@@ -441,6 +442,13 @@ if (editId) {
     );
   }
 
+  //  NEW RULE: only allow edit if APPROVED
+if (skill.status === "APPROVED") {
+    // Only allow slot editing (ignore skill fields)
+    // Do NOT update name, level, desc, proof
+  }
+
+
 } else {
 
   skill = await prisma.skill.findFirst({
@@ -497,18 +505,70 @@ if (!skill) {
    PREVENT DUPLICATE SLOT
 ============================================================ */
 
-const existingSlot = await prisma.skillSlot.findFirst({
+// const existingSlot = await prisma.skillSlot.findFirst({
+//   where: {
+//     skillId: skill.id,
+//     date: dateObj,
+//     timeFrom: fromTime,
+//     timeTo: toTime
+//   }
+// });
+
+// const existingSlot = await prisma.skillSlot.findFirst({
+//   where: {
+//     date: dateObj,
+//     timeFrom: fromTime,
+//     timeTo: toTime,
+//     skill: {
+//       userId: userId,   
+//     },
+//   },
+// });
+
+// if (existingSlot) {
+//   return NextResponse.json(
+//     { error: "SLOT_ALREADY_EXISTS" },
+//     { status: 400 }
+//   );
+// }
+
+const startOfDay = new Date(selectedDate);
+startOfDay.setHours(0, 0, 0, 0);
+
+const endOfDay = new Date(selectedDate);
+endOfDay.setHours(23, 59, 59, 999);
+
+const conflictingSlots = await prisma.skillSlot.findMany({
   where: {
-    skillId: skill.id,
-    date: dateObj,
-    timeFrom: fromTime,
-    timeTo: toTime
-  }
+    date: {
+      gte: startOfDay,
+      lte: endOfDay,
+    },
+    skill: {
+      userId: userId,
+    },
+  },
 });
 
-if (existingSlot) {
+const newFromMinutes =
+  Number(fromTime.split(":")[0]) * 60 + Number(fromTime.split(":")[1]);
+
+const newToMinutes =
+  Number(toTime.split(":")[0]) * 60 + Number(toTime.split(":")[1]);
+
+const hasConflict = conflictingSlots.some((slot) => {
+  const existingFromMinutes =
+    Number(slot.timeFrom.split(":")[0]) * 60 + Number(slot.timeFrom.split(":")[1]);
+
+  const existingToMinutes =
+    Number(slot.timeTo.split(":")[0]) * 60 + Number(slot.timeTo.split(":")[1]);
+
+  return newFromMinutes < existingToMinutes && newToMinutes > existingFromMinutes;
+});
+
+if (hasConflict) {
   return NextResponse.json(
-    { error: "SLOT_ALREADY_EXISTS" },
+    { error: "Failed  TIME_SLOT_OVERLAPS_WITH_EXISTING_SLOT" },
     { status: 400 }
   );
 }

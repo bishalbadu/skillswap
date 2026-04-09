@@ -16,7 +16,7 @@ export default function DashboardLayout({
   const [loading, setLoading] = useState(true);
 
   /* ============================
-     🔐 AUTH CHECK (SINGLE SOURCE)
+      AUTH CHECK (SINGLE SOURCE)
   ============================ */
   useEffect(() => {
     const controller = new AbortController();
@@ -40,7 +40,7 @@ export default function DashboardLayout({
   }, []);
 
   /* ============================
-     🚪 REDIRECT IF UNAUTH
+      REDIRECT IF UNAUTH
   ============================ */
   useEffect(() => {
     if (!loading && user === null) {
@@ -49,7 +49,7 @@ export default function DashboardLayout({
   }, [loading, user, router]);
 
   /* ============================
-     ⏳ LOADING STATE
+      LOADING STATE
   ============================ */
   if (loading) {
     return (
@@ -60,14 +60,14 @@ export default function DashboardLayout({
   }
 
   /* ============================
-     ⛔ BLOCK RENDER WHILE REDIRECTING
+      BLOCK RENDER WHILE REDIRECTING
   ============================ */
   if (!user) {
     return null;
   }
 
   /* ============================
-     ✅ AUTHENTICATED LAYOUT
+      AUTHENTICATED LAYOUT
   ============================ */
   return (
     <div className="min-h-screen bg-[#f4f5f1] font-['Inter']">

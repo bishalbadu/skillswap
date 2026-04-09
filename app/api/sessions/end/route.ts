@@ -1,32 +1,95 @@
+// // after premium
+
 // import { NextResponse } from "next/server";
 // import prisma from "@/lib/prisma";
 // import { getUserFromRequest } from "@/lib/auth";
 
 // export async function POST(req: Request) {
-//   const user = await getUserFromRequest();
-//   if (!user) return NextResponse.json({ error: "UNAUTH" }, { status: 401 });
+//   try {
+//     const user = await getUserFromRequest();
+//     if (!user) {
+//       return NextResponse.json({ error: "UNAUTH" }, { status: 401 });
+//     }
 
-//   const { sessionId } = await req.json();
-//   if (!sessionId) return NextResponse.json({ error: "SESSION_ID_REQUIRED" }, { status: 400 });
+//     const { sessionId } = await req.json();
+//     if (!sessionId) {
+//       return NextResponse.json(
+//         { error: "SESSION_ID_REQUIRED" },
+//         { status: 400 }
+//       );
+//     }
 
-//   const session = await prisma.session.findUnique({ where: { id: Number(sessionId) } });
-//   if (!session) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
+//     const session = await prisma.session.findUnique({
+//       where: { id: Number(sessionId) },
+//     });
 
-//   if (session.hostId !== user.id) {
-//     return NextResponse.json({ error: "ONLY_HOST_CAN_END" }, { status: 403 });
-//   }
+//     if (!session) {
+//       return NextResponse.json(
+//         { error: "NOT_FOUND" },
+//         { status: 404 }
+//       );
+//     }
 
-//   const updated = await prisma.session.update({
+//     if (session.hostId !== user.id) {
+//       return NextResponse.json(
+//         { error: "ONLY_HOST_CAN_END" },
+//         { status: 403 }
+//       );
+//     }
+
+//     if (session.status === "COMPLETED") {
+//       return NextResponse.json(
+//         { error: "ALREADY_COMPLETED" },
+//         { status: 400 }
+//       );
+//     }
+
+//     if (session.status !== "LIVE") {
+//       return NextResponse.json(
+//         { error: "SESSION_NOT_ACTIVE" },
+//         { status: 400 }
+//       );
+//     }
+
+//     /* ===============================
+//        TRANSACTION (IMPORTANT)
+//     =============================== */
+//    const updated = await prisma.$transaction(async (tx) => {
+//   const completedSession = await tx.session.update({
 //     where: { id: session.id },
-//     data: { status: "COMPLETED", endedAt: new Date() },
+//     data: {
+//       status: "COMPLETED",
+//       endedAt: new Date(),
+//     },
 //   });
 
-//   return NextResponse.json({ success: true, session: updated });
+//   await tx.user.updateMany({
+//     where: {
+//       id: { in: [session.hostId, session.guestId] },
+//     },
+//     data: {
+//       completedSwaps: { increment: 1 },
+//     },
+//   });
+
+//   return completedSession;
+// });
+
+
+//     return NextResponse.json({
+//       success: true,
+//       session: updated,
+//     });
+
+//   } catch (error) {
+//     console.error("Session End Error:", error);
+//     return NextResponse.json(
+//       { error: "SERVER_ERROR" },
+//       { status: 500 }
+//     );
+//   }
 // }
 
-
-
-// after premium
 
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
@@ -58,6 +121,11 @@ export async function POST(req: Request) {
       );
     }
 
+    /* ===============================
+       VALIDATIONS
+    =============================== */
+
+    // Only host can end
     if (session.hostId !== user.id) {
       return NextResponse.json(
         { error: "ONLY_HOST_CAN_END" },
@@ -65,6 +133,7 @@ export async function POST(req: Request) {
       );
     }
 
+    // Prevent double ending
     if (session.status === "COMPLETED") {
       return NextResponse.json(
         { error: "ALREADY_COMPLETED" },
@@ -72,6 +141,7 @@ export async function POST(req: Request) {
       );
     }
 
+    // Only LIVE session can be ended
     if (session.status !== "LIVE") {
       return NextResponse.json(
         { error: "SESSION_NOT_ACTIVE" },
@@ -80,29 +150,42 @@ export async function POST(req: Request) {
     }
 
     /* ===============================
-       TRANSACTION (IMPORTANT)
+       TRANSACTION (SAFE + ATOMIC)
     =============================== */
-   const updated = await prisma.$transaction(async (tx) => {
-  const completedSession = await tx.session.update({
-    where: { id: session.id },
-    data: {
-      status: "COMPLETED",
-      endedAt: new Date(),
-    },
-  });
 
-  await tx.user.updateMany({
-    where: {
-      id: { in: [session.hostId, session.guestId] },
-    },
-    data: {
-      completedSwaps: { increment: 1 },
-    },
-  });
+    const updated = await prisma.$transaction(async (tx) => {
+      // 1. Mark session completed
+      const completedSession = await tx.session.update({
+        where: { id: session.id },
+        data: {
+          status: "COMPLETED",
+          endedAt: new Date(),
+        },
+      });
 
-  return completedSession;
-});
+      // 2. Update both users swap count
+      await tx.user.updateMany({
+        where: {
+          id: { in: [session.hostId, session.guestId] },
+        },
+        data: {
+          completedSwaps: { increment: 1 },
+        },
+      });
 
+      // 3. OPTIONAL (recommended): notify guest
+      await tx.notification.create({
+        data: {
+          userId: session.guestId,
+          type: "GENERAL",
+          title: "Session Ended",
+          message: "The session has been ended by the host.",
+          link: "/dashboard/skillmeet",
+        },
+      });
+
+      return completedSession;
+    });
 
     return NextResponse.json({
       success: true,
@@ -111,6 +194,7 @@ export async function POST(req: Request) {
 
   } catch (error) {
     console.error("Session End Error:", error);
+
     return NextResponse.json(
       { error: "SERVER_ERROR" },
       { status: 500 }

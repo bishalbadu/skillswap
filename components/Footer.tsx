@@ -8,10 +8,10 @@ export default function Footer() {
     <footer className="bg-[#556B2F] text-white pt-16 pb-8 px-8">
       <div className="max-w-6xl mx-auto">
 
-        {/* 🔝 TOP SECTION */}
+        {/*  TOP SECTION */}
         <div className="grid md:grid-cols-3 gap-10">
 
-          {/* 🌿 BRAND */}
+          {/*  BRAND */}
           <div>
             <div className="flex items-center gap-3 mb-4">
 
@@ -36,7 +36,7 @@ export default function Footer() {
             </p>
           </div>
 
-          {/* 🔗 QUICK LINKS */}
+          {/*  QUICK LINKS */}
           <div>
             <h4 className="font-semibold mb-4 text-[#B8860B]">
               Quick Links
@@ -58,7 +58,7 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* 📬 CONTACT / EXTRA */}
+          {/*  CONTACT / EXTRA */}
           <div>
             <h4 className="font-semibold mb-4 text-[#B8860B]">
               Stay Connected
@@ -74,7 +74,7 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* 🔻 DIVIDER */}
+        {/* DIVIDER */}
         <div className="border-t border-white/20 mt-10 pt-6 text-center text-sm text-gray-300">
           © {new Date().getFullYear()} SkillSwap. All rights reserved.
         </div>

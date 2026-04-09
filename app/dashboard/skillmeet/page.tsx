@@ -574,22 +574,45 @@ export default function SkillMeetPage() {
   const [sessions, setSessions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  async function load() {
-    setLoading(true);
-    const res = await fetch(`/api/sessions?status=${tab}`, {
-      credentials: "include",
-      cache: "no-store",
-    });
-    const data = await res.json();
-    setSessions(data.sessions || []);
-    setLoading(false);
-  }
+  // async function load() {
+  //   setLoading(true);
+  //   const res = await fetch(`/api/sessions?status=${tab}`, {
+  //     credentials: "include",
+  //     cache: "no-store",
+  //   });
+  //   const data = await res.json();
+  //   setSessions(data.sessions || []);
+  //   setLoading(false);
+  // }
+  async function load(showLoader = false) {
+  if (showLoader) setLoading(true);
+
+  const res = await fetch(`/api/sessions?status=${tab}`, {
+    credentials: "include",
+    cache: "no-store",
+  });
+
+  const data = await res.json();
+  setSessions(data.sessions || []);
+
+  if (showLoader) setLoading(false);
+}
+
+  // useEffect(() => {
+  //   load();
+  //   const t = setInterval(load, 5000);
+  //   return () => clearInterval(t);
+  // }, [tab]);
 
   useEffect(() => {
-    load();
-    const t = setInterval(load, 5000);
-    return () => clearInterval(t);
-  }, [tab]);
+  load(true); // first time → show loading
+
+  const t = setInterval(() => load(false), 5000); // after → silent refresh
+
+  return () => clearInterval(t);
+}, [tab]);
+
+
 
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
@@ -654,9 +677,9 @@ export default function SkillMeetPage() {
             const waiting = !s.meetingRoom && s.status === "UPCOMING";
 
             const canJoin =
-              !!s.meetingRoom &&
-              (s.status === "LIVE" || s.status === "UPCOMING");
-
+  !!s.meetingRoom &&
+  s.status === "LIVE";
+  
             return (
               <div
                 key={s.id}

@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
-    // 🧠 group by requesterId
+    //  group by requesterId
     const topUsers = await prisma.swapRequest.groupBy({
       by: ["requesterId"],
       _count: {
@@ -17,7 +17,7 @@ export async function GET() {
       take: 3,
     });
 
-    // 🎯 fetch user details
+    //  fetch user details
     const users = await Promise.all(
       topUsers.map(async (u) => {
         const user = await prisma.user.findUnique({

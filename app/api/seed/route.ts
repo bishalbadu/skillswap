@@ -3,7 +3,7 @@ import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
 export async function GET() {
-  // ❗ DEV ONLY SAFETY
+  // DEV ONLY SAFETY
   if (process.env.NODE_ENV === "production") {
     return NextResponse.json(
       { error: "FORBIDDEN" },
