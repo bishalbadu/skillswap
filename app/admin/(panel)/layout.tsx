@@ -9,6 +9,8 @@ import {
   FiLayers,
   FiRepeat,
   FiBarChart2,
+  FiTrendingUp
+ 
 } from "react-icons/fi";
 
 export default function AdminLayout({
@@ -53,6 +55,13 @@ export default function AdminLayout({
             label="Swaps"
             icon={<FiRepeat />}
           />
+          
+    <SidebarLink
+  href="/admin/earnings"
+  label="Earnings"
+  icon={<FiTrendingUp />}
+/>
+
           <SidebarLink
             href="/admin/reports"
             label="Reports"

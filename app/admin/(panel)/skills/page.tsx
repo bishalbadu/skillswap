@@ -1,316 +1,3 @@
-
-
-// "use client";
-
-// import { useEffect, useState } from "react";
-
-// type SkillRow = {
-// id: number;
-// name: string;
-// type: "OFFER" | "WANT";
-// level: string | null;
-// platform: string | null;
-// status: "PENDING" | "APPROVED" | "DISABLED";
-// createdAt: string;
-
-// certificationUrl?: string | null;
-// certificationType?: string | null;
-
-// user: {
-// firstName: string;
-// lastName: string;
-// email: string;
-// };
-// };
-
-// export default function AdminSkillsPage() {
-// const [skills, setSkills] = useState<SkillRow[]>([]);
-// const [loading, setLoading] = useState(true);
-
-// const [q, setQ] = useState("");
-// const [type, setType] = useState("");
-// const [status, setStatus] = useState("");
-
-// const [proofUrl, setProofUrl] = useState<string | null>(null);
-// const [proofType, setProofType] = useState<"IMAGE" | "VIDEO" | null>(null);
-
-// async function loadSkills() {
-// setLoading(true);
-
-
-// const res = await fetch(
-//   `/api/admin/skills?q=${q}&type=${type}&status=${status}`,
-//   { credentials: "include" }
-// );
-
-// const data = await res.json();
-// setSkills(data.skills || []);
-// setLoading(false);
-
-
-// }
-
-// async function action(id: number, action: string) {
-// const status =
-// action === "APPROVE"
-// ? "APPROVED"
-// : action === "DISABLE"
-// ? "DISABLED"
-// : "APPROVED";
-
-
-// await fetch(`/api/admin/skills/${id}`, {
-//   method: "PATCH",
-//   headers: { "Content-Type": "application/json" },
-//   credentials: "include",
-//   body: JSON.stringify({ status }),
-// });
-
-// loadSkills();
-
-
-// }
-
-// useEffect(() => {
-// loadSkills();
-// }, []);
-
-// return ( <div className="space-y-6">
-
-// ```
-//   {/* HEADER */}
-//   <div className="flex justify-between">
-//     <h1 className="text-2xl font-bold">Skill Moderation</h1>
-
-//     <button
-//       onClick={loadSkills}
-//       className="px-4 py-2 bg-[#4a5e27] text-white rounded"
-//     >
-//       Refresh
-//     </button>
-//   </div>
-
-//   {/* FILTER BAR */}
-//   <div className="bg-white p-4 rounded-xl shadow flex gap-3">
-//     <input
-//       placeholder="Search..."
-//       value={q}
-//       onChange={(e) => setQ(e.target.value)}
-//       className="border px-3 py-2 rounded w-64"
-//     />
-
-//     <select
-//       value={type}
-//       onChange={(e) => setType(e.target.value)}
-//       className="border px-3 py-2 rounded"
-//     >
-//       <option value="">All Types</option>
-//       <option value="OFFER">Offer</option>
-//       <option value="WANT">Want</option>
-//     </select>
-
-//     <select
-//       value={status}
-//       onChange={(e) => setStatus(e.target.value)}
-//       className="border px-3 py-2 rounded"
-//     >
-//       <option value="">All Status</option>
-//       <option value="PENDING">Pending</option>
-//       <option value="APPROVED">Approved</option>
-//       <option value="DISABLED">Disabled</option>
-//     </select>
-
-//     <button
-//       onClick={loadSkills}
-//       className="px-4 py-2 bg-black text-white rounded"
-//     >
-//       Apply
-//     </button>
-//   </div>
-
-//   {/* TABLE */}
-//   <div className="bg-white rounded-xl shadow overflow-hidden">
-//     <table className="w-full text-sm table-fixed">
-//       <thead className="bg-gray-50 text-gray-600">
-//         <tr>
-//           <th className="px-6 py-3 text-left w-[28%]">Skill</th>
-//           <th className="px-6 py-3 text-left w-[10%]">Type</th>
-//           <th className="px-6 py-3 text-left w-[28%]">Owner</th>
-//           <th className="px-6 py-3 text-left w-[12%]">Proof</th>
-//           <th className="px-6 py-3 text-left w-[14%]">Status</th>
-//           <th className="px-6 py-3 text-left w-[12%]">Created</th>
-//           <th className="px-6 py-3 text-right w-[8%]">Actions</th>
-//         </tr>
-//       </thead>
-
-//       <tbody>
-//         {skills.map((s) => (
-//           <tr key={s.id} className="border-t hover:bg-gray-50">
-
-//             {/* Skill */}
-//             <td className="px-6 py-4">
-//               <div className="font-medium">{s.name}</div>
-//               <div className="text-xs text-gray-500">
-//                 {s.level || "—"} {s.platform && `• ${s.platform}`}
-//               </div>
-//             </td>
-
-//             {/* Type */}
-//             <td className="px-6 py-4">
-//               <Badge
-//                 text={s.type === "OFFER" ? "Offer" : "Want"}
-//                 tone={s.type === "OFFER" ? "green" : "blue"}
-//               />
-//             </td>
-
-//             {/* Owner */}
-//             <td className="px-6 py-4">
-//               <div className="font-medium">
-//                 {s.user.firstName} {s.user.lastName}
-//               </div>
-//               <div className="text-xs text-gray-500">
-//                 {s.user.email}
-//               </div>
-//             </td>
-
-//             {/* Proof */}
-//             <td className="px-6 py-4">
-//               {s.certificationUrl ? (
-//                 <button
-//                   onClick={() => {
-//                     setProofUrl(s.certificationUrl || null);
-//                     setProofType(
-//                       s.certificationType === "VIDEO" ? "VIDEO" : "IMAGE"
-//                     );
-//                   }}
-//                   className="text-blue-600 hover:underline text-sm"
-//                 >
-//                   View Proof
-//                 </button>
-//               ) : (
-//                 <span className="text-gray-400 text-sm">No proof</span>
-//               )}
-//             </td>
-
-//             {/* Status */}
-//             <td className="px-6 py-4">
-//               <Badge
-//                 text={s.status}
-//                 tone={
-//                   s.status === "APPROVED"
-//                     ? "green"
-//                     : s.status === "PENDING"
-//                     ? "yellow"
-//                     : "red"
-//                 }
-//               />
-//             </td>
-
-//             {/* Created */}
-//             <td className="px-6 py-4">
-//               {new Date(s.createdAt).toLocaleDateString()}
-//             </td>
-
-//             {/* Actions */}
-//             <td className="px-6 py-4 text-right whitespace-nowrap w-[160px]">
-//               <div className="flex justify-end gap-4">
-
-//                 {s.status === "PENDING" && (
-//                   <button
-//                     onClick={() => action(s.id, "APPROVE")}
-//                     className="text-blue-600 hover:underline font-medium"
-//                   >
-//                     Approve
-//                   </button>
-//                 )}
-
-//                 {s.status !== "DISABLED" ? (
-//                   <button
-//                     onClick={() => action(s.id, "DISABLE")}
-//                     className="text-red-600 hover:underline font-medium"
-//                   >
-//                     Disable
-//                   </button>
-//                 ) : (
-//                   <button
-//                     onClick={() => action(s.id, "ENABLE")}
-//                     className="text-green-600 hover:underline font-medium"
-//                   >
-//                     Enable
-//                   </button>
-//                 )}
-
-//               </div>
-//             </td>
-
-//           </tr>
-//         ))}
-//       </tbody>
-//     </table>
-
-//     {loading && (
-//       <div className="p-4 text-gray-500">Loading…</div>
-//     )}
-//   </div>
-
-//   {/* PROOF MODAL */}
-//   {proofUrl && (
-//     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-
-//       <div className="bg-white rounded-xl p-6 max-w-3xl w-full relative">
-
-//         <button
-//           onClick={() => {
-//             setProofUrl(null);
-//             setProofType(null);
-//           }}
-//           className="absolute top-3 right-4 text-gray-600 text-lg"
-//         >
-//           ✕
-//         </button>
-
-//         {proofType === "VIDEO" ? (
-//           <video
-//             src={proofUrl}
-//             controls
-//             className="w-full rounded-lg"
-//           />
-//         ) : (
-//           <img
-//             src={proofUrl}
-//             alt="Certification Proof"
-//             className="w-full rounded-lg"
-//           />
-//         )}
-
-//       </div>
-
-//     </div>
-//   )}
-
-// </div>
-
-
-// );
-// }
-
-// function Badge({ text, tone }: any) {
-// const styles =
-// tone === "green"
-// ? "bg-green-100 text-green-700"
-// : tone === "blue"
-// ? "bg-blue-100 text-blue-700"
-// : tone === "yellow"
-// ? "bg-yellow-100 text-yellow-700"
-// : "bg-red-100 text-red-700";
-
-// return (
-// <span className={`px-2 py-1 text-xs rounded ${styles}`}>
-// {text} </span>
-// );
-// }
-
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -358,7 +45,8 @@ const [status, setStatus] = useState("");
 
 const [selectedProofs, setSelectedProofs] = useState<SkillProof[]>([]);
 const [openProofModal, setOpenProofModal] = useState(false);
-
+const [page, setPage] = useState(1);
+const itemsPerPage = 10;
 /* ======================================================
 LOAD SKILLS
 ====================================================== */
@@ -377,6 +65,7 @@ const data = await res.json();
 
 setSkills(data.skills || []);
 setLoading(false);
+setPage(1);
 
 
 }
@@ -414,6 +103,12 @@ LOAD ON START
 useEffect(() => {
 loadSkills();
 }, []);
+
+// ================= PAGINATION =================
+const totalPages = Math.ceil(skills.length / itemsPerPage);
+
+const start = (page - 1) * itemsPerPage;
+const currentSkills = skills.slice(start, start + itemsPerPage);
 
 /* ======================================================
 UI
@@ -498,7 +193,7 @@ return ( <div className="space-y-6">
 
       <tbody>
 
-        {skills.map((s) => (
+       {currentSkills.map((s) => (
 
           <tr key={s.id} className="border-t hover:bg-gray-50">
 
@@ -640,6 +335,31 @@ return ( <div className="space-y-6">
     {loading && (
       <div className="p-4 text-gray-500">Loading…</div>
     )}
+
+{/* ================= PAGINATION ================= */}
+<div className="flex justify-between items-center px-6 py-4 border-t">
+
+  <button
+    onClick={() => setPage((p) => p - 1)}
+    disabled={page === 1}
+    className="px-4 py-2 text-sm border rounded disabled:opacity-50 hover:bg-gray-100"
+  >
+    ← Prev
+  </button>
+
+  <p className="text-sm text-gray-600">
+    Page {page} of {totalPages || 1}
+  </p>
+
+  <button
+    onClick={() => setPage((p) => p + 1)}
+    disabled={page === totalPages || totalPages === 0}
+    className="px-4 py-2 text-sm border rounded disabled:opacity-50 hover:bg-gray-100"
+  >
+    Next →
+  </button>
+
+</div>
 
   </div>
 
