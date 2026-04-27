@@ -52,10 +52,10 @@ export default function AdminDashboard() {
 
   // ================= CHART DATA =================
 const barData = [
-  { name: "Users", value: data?.users || 0 },
-  { name: "Skills", value: data?.skills || 0 },
-  { name: "Swaps", value: data?.swaps || 0 },
-  { name: "Sessions", value: data?.completedSessions || 0 },
+  { name: "Users", value: data?.users || 0, fill: "#3b82f6" },     // blue
+  { name: "Skills", value: data?.skills || 0, fill: "#8b5cf6" },   // purple
+  { name: "Swaps", value: data?.swaps || 0, fill: "#eab308" },     // yellow
+  { name: "Sessions", value: data?.completedSessions || 0, fill: "#22c55e" }, // green
 ];
 
 const pieData = [
@@ -65,11 +65,15 @@ const pieData = [
 
 // ================= EARNINGS CHART DATA =================
 const earningsData = [
-  { name: "Revenue", value: data?.revenue || 0 },
-  { name: "Premium Users", value: data?.premium || 0 },
+  { name: "Revenue", value: data?.revenue || 0, fill: "#16a34a" }, 
+  { name: "Premium Users", value: data?.premium || 0, fill: "#f97316" }, 
 ];
 
-const COLORS = ["#22c55e", "#e5e7eb"];
+const COLORS = [
+  "#ea580c", // Premium (orange)
+  "#c28a2c", // Free (mustard yellow)
+];
+
 
   return (
     <div className="space-y-10 animate-fadeIn">
@@ -136,7 +140,11 @@ const COLORS = ["#22c55e", "#e5e7eb"];
         <XAxis dataKey="name" />
         <YAxis />
         <Tooltip />
-        <Bar dataKey="value" fill="#6366f1" radius={[6, 6, 0, 0]} />
+       <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+  {barData.map((entry, index) => (
+    <Cell key={index} fill={entry.fill} />
+  ))}
+</Bar>
       </BarChart>
     </ResponsiveContainer>
   </div>
@@ -232,11 +240,11 @@ const COLORS = ["#22c55e", "#e5e7eb"];
       <XAxis dataKey="name" />
       <YAxis />
       <Tooltip />
-      <Bar
-        dataKey="value"
-        fill="#16a34a"
-        radius={[6, 6, 0, 0]}
-      />
+      <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+  {earningsData.map((entry, index) => (
+    <Cell key={index} fill={entry.fill} />
+  ))}
+</Bar>
     </BarChart>
   </ResponsiveContainer>
 </div>

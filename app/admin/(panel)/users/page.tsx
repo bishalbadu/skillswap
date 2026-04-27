@@ -232,7 +232,7 @@ export default function AdminUsersPage() {
   const [selectedUser, setSelectedUser] = useState<any>(null);
 
   const searchParams = useSearchParams();
-  const highlightId = Number(searchParams.get("highlight"));
+ const highlightId = Number(searchParams?.get("highlight") || 0);
 
   const rowRefs = useRef<Record<number, HTMLTableRowElement | null>>({});
 
@@ -327,6 +327,8 @@ export default function AdminUsersPage() {
           <option value="">All Status</option>
           <option value="ACTIVE">Active</option>
           <option value="SUSPENDED">Suspended</option>
+          <option value="DEACTIVATED">Deactivated</option>
+
         </select>
 
         <select
@@ -390,18 +392,23 @@ export default function AdminUsersPage() {
                   </span>
                 </td>
 
-                <td className="px-6 py-4">
-                  <span
-                    className={`px-2 py-1 rounded text-xs font-medium ${
-                      u.status === "ACTIVE"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-red-100 text-red-700"
-                    }`}
-                  >
-                    {u.status}
-                  </span>
-                </td>
-
+               <td className="px-6 py-4">
+  <span
+    className={`px-2 py-1 rounded text-xs font-medium ${
+      u.status === "SUSPENDED"
+        ? "bg-red-100 text-red-700"
+        : u.isActive === false
+        ? "bg-yellow-100 text-yellow-700"
+        : "bg-green-100 text-green-700"
+    }`}
+  >
+    {u.status === "SUSPENDED"
+      ? "SUSPENDED"
+      : u.isActive === false
+      ? "DEACTIVATED"
+      : "ACTIVE"}
+  </span>
+</td>
                 <td className="px-6 py-4 text-gray-600">
                   {new Date(u.createdAt).toLocaleDateString()}
                 </td>
@@ -419,30 +426,33 @@ export default function AdminUsersPage() {
 
                 {/* ACTIONS */}
                 <td className="px-6 py-4 text-right">
-                  <div className="flex justify-end gap-4">
-                    <button
-                      onClick={() => viewProfile(u.id)}
-                      className="text-green-700 hover:underline font-medium"
-                    >
-                      View
-                    </button>
+                 <div className="flex justify-end gap-4">
+  {/* VIEW */}
+  <button
+    onClick={() => viewProfile(u.id)}
+    className="text-green-700 hover:underline font-medium"
+  >
+    View
+  </button>
 
-                    <button
-                      onClick={() => toggleUser(u.id, u.status)}
-                      className="text-blue-600 hover:underline font-medium"
-                    >
-                      {u.status === "ACTIVE" ? "Suspend" : "Activate"}
-                    </button>
+  {/* TOGGLE (Suspend / Activate) */}
+  <button
+    onClick={() => toggleUser(u.id, u.status)}
+    className="text-blue-600 hover:underline font-medium"
+  >
+    {u.status === "ACTIVE" ? "Suspend" : "Activate"}
+  </button>
 
-                    <button
-                      onClick={() =>
-                        deleteUser(u.id, `${u.firstName} ${u.lastName}`)
-                      }
-                      className="text-red-600 hover:underline font-medium"
-                    >
-                      Delete
-                    </button>
-                  </div>
+  {/* DELETE */}
+  <button
+    onClick={() =>
+      deleteUser(u.id, `${u.firstName} ${u.lastName}`)
+    }
+    className="text-red-600 hover:underline font-medium"
+  >
+    Delete
+  </button>
+</div>
                 </td>
               </tr>
             ))}
