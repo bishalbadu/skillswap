@@ -82,6 +82,8 @@ export async function GET() {
         membership: true,
         premiumUntil: true,
         completedSwaps: true,
+        isActive: true,
+        
       },
     });
 
@@ -89,7 +91,7 @@ export async function GET() {
       return NextResponse.json({ user: null });
     }
 
-    /* ================= 🔥 REAL COMPLETED COUNT ================= */
+    /* ================= 🔥REAL COMPLETED COUNT ================= */
 
     const realCompletedCount = await prisma.session.count({
       where: {

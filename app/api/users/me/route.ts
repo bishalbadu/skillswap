@@ -162,6 +162,7 @@ export async function GET() {
         membership: true,
         premiumUntil: true,
         completedSwaps: true,
+        
       },
     });
 

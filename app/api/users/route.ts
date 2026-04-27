@@ -13,6 +13,7 @@ export async function GET() {
         avatar: true,
         bio: true,
         createdAt: true,
+         isActive: true,
       },
     });
 
