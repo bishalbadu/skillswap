@@ -18,6 +18,7 @@ FaPaperPlane
 
 import NotificationPanel from "@/components/NotificationPanel";
 
+
 export default function Sidebar() {
 
 const path = usePathname();
@@ -27,6 +28,7 @@ const [unreadCount, setUnreadCount] = useState(0);
 
 //  NEW: chat unread count
 const [chatUnread, setChatUnread] = useState(0);
+const [user, setUser] = useState<any>(null);
 
 /* ==========================
 LOAD NOTIFICATION COUNT
@@ -39,6 +41,21 @@ const data = await res.json();
 setUnreadCount(data.unreadCount || 0);
 })();
 }, []);
+
+/* ==========================
+Acc deactivate
+========================== */
+useEffect(() => {
+  (async () => {
+    const res = await fetch("/api/auth/me", {
+      credentials: "include",
+    });
+    const data = await res.json();
+    setUser(data.user);
+  })();
+}, []);
+
+const allowedWhenInactive = ["/dashboard", "/dashboard/settings"];
 
 /* ==========================
 LOAD CHAT UNREAD COUNT
@@ -107,71 +124,82 @@ return (
 
     {items.map((item: any, i) => {
 
-      //  Notification action button
-      if (item.action) {
+  const isDisabled =
+    user && user.isActive === false && !allowedWhenInactive.includes(item.href);
 
-        return (
-         <button
-  key={i}
-  onClick={item.action}
-  className="group flex items-center justify-between w-full px-4 py-2 rounded-md
-  bg-white/10 hover:bg-white hover:text-[#2c3a21]
-  transition-all duration-300 transform hover:scale-[1.02] hover:translate-x-1"
->
-  <div className="flex items-center gap-3">
+  // 🔔 Notification button
+  if (item.action) {
+    return (
+      <button
+        key={i}
+        onClick={() => {
+          if (user && user.isActive === false) {
+            alert("Your account is deactivated.");
+            return;
+          }
+          item.action();
+        }}
+        className={`group flex items-center justify-between w-full px-4 py-2 rounded-md transition-all duration-300 ${
+          user && user.isActive === false
+            ? "opacity-50 cursor-not-allowed bg-white/5"
+            : "bg-white/10 hover:bg-white hover:text-[#2c3a21] transform hover:scale-[1.02] hover:translate-x-1"
+        }`}
+      >
+        <div className="flex items-center gap-3">
+          <span className="transition-transform duration-300 group-hover:scale-110">
+            {item.icon}
+          </span>
+          <span className="group-hover:font-semibold transition-all">
+            {item.text}
+          </span>
+        </div>
 
-    <span className="transition-transform duration-300 group-hover:scale-110">
-      {item.icon}
-    </span>
+        {item.badge > 0 && (
+          <span className="bg-red-500 text-xs px-2 py-1 rounded-full animate-pulse">
+            {item.badge > 9 ? "9+" : item.badge}
+          </span>
+        )}
+      </button>
+    );
+  }
+  //  Normal links
+  return (
+    <Link
+      key={i}
+      href={isDisabled ? "#" : item.href}
+      onClick={(e) => {
+        if (isDisabled) {
+          e.preventDefault();
+          alert("Your account is deactivated. Please reactivate to continue.");
+        }
+      }}
+      className={`group flex items-center justify-between px-4 py-2 rounded-md transition-all duration-300
+        ${
+          isDisabled
+            ? "opacity-50 cursor-not-allowed bg-white/5"
+            : path === item.href
+            ? "bg-white text-[#2c3a21] scale-[1.03] shadow-md"
+            : "bg-white/10 hover:bg-white hover:text-[#2c3a21] hover:scale-[1.02] hover:translate-x-1"
+        }`}
+    >
+      <div className="flex items-center gap-3">
+        <span className="transition-transform duration-300 group-hover:scale-110">
+          {item.icon}
+        </span>
 
-    <span className="group-hover:font-semibold transition-all">
-      {item.text}
-    </span>
-  </div>
+        <span className="transition-all duration-300 group-hover:font-semibold">
+          {item.text}
+        </span>
+      </div>
 
-  {item.badge > 0 && (
-  <span className="bg-red-500 text-xs px-2 py-1 rounded-full animate-pulse">
-    {item.badge > 9 ? "9+" : item.badge}
-  </span>
-)}
-</button>
-        );
-      }
-
-
-      //  Normal links
-      return (
-        <Link
-  key={i}
-  href={item.href}
-  className={`group flex items-center justify-between px-4 py-2 rounded-md transition-all duration-300
-    transform
-    ${
-      path === item.href
-        ? "bg-white text-[#2c3a21] scale-[1.03] shadow-md"
-        : "bg-white/10 hover:bg-white hover:text-[#2c3a21] hover:scale-[1.02] hover:translate-x-1"
-    }`}
->
-  <div className="flex items-center gap-3">
-
-    <span className="transition-transform duration-300 group-hover:scale-110">
-      {item.icon}
-    </span>
-
-    <span className="transition-all duration-300 group-hover:font-semibold">
-      {item.text}
-    </span>
-  </div>
-
-  {item.badge > 0 && (
-    <span className="bg-red-500 text-xs px-2 py-1 rounded-full animate-pulse">
-      {item.badge}
-    </span>
-  )}
-</Link>
-      );
-
-    })}
+      {item.badge > 0 && (
+        <span className="bg-red-500 text-xs px-2 py-1 rounded-full animate-pulse">
+          {item.badge}
+        </span>
+      )}
+    </Link>
+  );
+})}
 
   </aside>
 
