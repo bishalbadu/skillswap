@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getUserFromRequest } from "@/lib/auth";
+import { runReminderCheck } from "@/lib/reminderRunner";
 
 export async function POST(req: Request) {
   const user = await getUserFromRequest();
