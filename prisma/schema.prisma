@@ -46,6 +46,7 @@ enum NotificationType {
   GENERAL
   ACCOUNT_SUSPENDED
   ACCOUNT_REACTIVATED
+  SESSION_REMINDER
 }
 
 enum ReportReason {
@@ -95,7 +96,7 @@ model User {
   password String?
 
   emailVerified            DateTime?
-  emailVerificationToken   String?
+  emailVerificationOtp     String?
   emailVerificationExpires DateTime?
 
   resetPasswordToken   String?
@@ -106,7 +107,7 @@ model User {
   status     AccountStatus @default(ACTIVE)
   membership Membership    @default(FREE)
 
-  // ⭐ PREMIUM SYSTEM
+  // PREMIUM SYSTEM
   completedSwaps Int            @default(0)
   premiumUntil   DateTime?
   payments       Payment[]
@@ -132,6 +133,7 @@ model User {
 
   messages Message[]
   settings UserSettings?
+  isActive Boolean @default(true)
 }
 
 model Skill {
@@ -151,7 +153,7 @@ model Skill {
   // WANT field
   learnGoal String?
 
-  // ✅ NEW: moderation status
+  // NEW: moderation status
   status SkillStatus @default(PENDING)
 
   userId Int
@@ -306,6 +308,7 @@ model Session {
   reviews     Review[]      @relation("SessionReviews")
 
   messages Message[]
+  remindersSent String[] @default([])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -332,7 +335,7 @@ model Review {
 
   createdAt DateTime @default(now())
 
-  @@unique([sessionId, reviewerId]) // 🚫 prevent duplicate rating
+  @@unique([sessionId, reviewerId]) //  prevent duplicate rating
   @@index([revieweeId])
 }
 
@@ -377,28 +380,22 @@ model Message {
   @@index([isRead])
 }
 model UserSettings {
-  id        Int      @id @default(autoincrement())
-  userId    Int      @unique
+  id     Int @id @default(autoincrement())
+  userId Int @unique
 
-  notifySwapRequests       Boolean @default(true)
-  notifyMessages           Boolean @default(true)
-  notifySessionReminders   Boolean @default(true)
-  notifySkillApproval      Boolean @default(true)
+  notifySwapRequests     Boolean @default(true)
+  notifyMessages         Boolean @default(true)
+  notifySessionReminders Boolean @default(true)
+  notifySkillApproval    Boolean @default(true)
 
-  quietHoursEnabled Boolean @default(false)
-  quietHoursFrom    String  @default("22:00")
-  quietHoursTo      String  @default("07:00")
-
-  profileVisibility     String  @default("public")
-  showOfferedSkills     Boolean @default(true)
-  showAvailabilitySlots Boolean @default(true)
-
-  maxActiveSwaps            String  @default("3")
   autoReminderBeforeSession Boolean @default(true)
-  autoArchiveCompletedChats Boolean @default(false)
 
-  user User @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+updatedAt DateTime @default(now()) @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
+
 //////////////////////
 // ADMIN
 //////////////////////
